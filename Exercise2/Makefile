@@ -21,3 +21,4 @@ gemm_oblas.x: gemm.c
 #	gcc -DUSE_DOUBLE  -DBLIS $^ -m64 -I${BLISROOT}/include/blis -L/${BLISROOT}/lib -o $@ -lpthread  -lblis -fopenmp -lm
 clean:
 	rm -rf *.x
+	rm -rf *.txt

@@ -9,9 +9,10 @@
 #SBATCH --output=attempt.csv
 for size in 2000 4000 6000
 do
-    output_file_name = "size_$size" 
+    output_file_name="size_$size"
+    echo $output_file_name 
     echo "Running using matrix of size $size"
-    srun -n1 --cpus-per-task=64 ./gemm_mkl.x $size $size $size > "$output_file_name.txt"
-    srun -n1 --cpus-per-task=64 ./gemm_oblas.x $size $size $size > "$output_file_name.txt"
+    srun -n1 --cpus-per-task=64 ./gemm_mkl.x $size $size $size >> "$output_file_name.txt"
+    srun -n1 --cpus-per-task=64 ./gemm_oblas.x $size $size $size >> "$output_file_name.txt"
     echo ---------------------------------------------------------------------------------------------------------  
 done
