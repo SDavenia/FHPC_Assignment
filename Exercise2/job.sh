@@ -7,9 +7,10 @@
 #SBATCH --mem=200gb 
 #SBATCH --time=00:05:00 
 #SBATCH --output=attempt.csv
-for size in 2000 4000 6000 8000 10000 12000 14000 16000 18000 20000
+for size in 2000 4000 6000
 do
     echo "Running using matrix of size $size"
-    srun -n1 --cpu-per-task=64 ./gemm_mkl.x $size $size $size 
-    srun -n1 --cpu-per-task=64 ./gemm_oblas.x $size $size $size 
+    srun -n1 --cpus-per-task=64 ./gemm_mkl.x $size $size $size 
+    srun -n1 --cpus-per-task=64 ./gemm_oblas.x $size $size $size
+    echo ---------------------------------------------------------------------------------------------------------  
 done
