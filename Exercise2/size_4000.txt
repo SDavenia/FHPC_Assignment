@@ -1,0 +1,35 @@
+Running using matrix of size 4000
+MKL library
+
+ This example computes real matrix C=alpha*A*B+beta*C using 
+ BLAS function dgemm, where A, B, and  C are matrices and 
+ alpha and beta are scalars
+
+ Initializing data for matrix multiplication C=A*B for matrix 
+ A(4000x4000) and matrix B(4000x4000)
+
+ Using double 
+
+ Computing matrix product using gemm function via CBLAS interface 
+
+ Elapsed time 0.279535619 s
+
+
+4000x4000x4000	0.279536 s	457.902290 GFLOPS
+BLAS library
+
+ This example computes real matrix C=alpha*A*B+beta*C using 
+ BLAS function dgemm, where A, B, and  C are matrices and 
+ alpha and beta are scalars
+
+ Initializing data for matrix multiplication C=A*B for matrix 
+ A(4000x4000) and matrix B(4000x4000)
+
+ Using double 
+
+ Computing matrix product using gemm function via CBLAS interface 
+
+ Elapsed time 0.400761099 s
+
+
+4000x4000x4000	0.400761 s	319.392277 GFLOPS
