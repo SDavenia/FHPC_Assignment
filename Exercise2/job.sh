@@ -5,15 +5,15 @@
 #SBATCH --ntasks-per-node=1 
 #SBATCH --cpus-per-task=64
 #SBATCH --mem=200gb 
-#SBATCH --time=00:05:00 
-
+#SBATCH --time=01:00:00 
+#SBATCH --output=output.out
 module load architecture/AMD
 module load mkl
 module load openBLAS/0.3.23-omp
 
 srun -n1 make cpu
 
-for size in 2000 4000 6000
+for size in {2000..6000..500}
 do
     output_file_name="size_$size"
     echo "Running using matrix of size $size" > "$output_file_name.txt"

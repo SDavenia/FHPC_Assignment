@@ -22,3 +22,4 @@ gemm_oblas.x: gemm.c
 clean:
 	rm -rf *.x
 	rm -rf *.txt
+	rm -rf *.out
