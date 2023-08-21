@@ -70,18 +70,20 @@ int main(int argc, char** argv)
     }
     else
     {
-    printf( "Usage: %s M K N, the corresponding matrices will be  A(M,K) B(K,N) \n", argv[0]); 
+    //printf( "Usage: %s M K N, the corresponding matrices will be  A(M,K) B(K,N) \n", argv[0]); 
     return 0; 
     }
 
 
+    /*
     printf ("\n This example computes real matrix C=alpha*A*B+beta*C using \n"
             " BLAS function dgemm, where A, B, and  C are matrices and \n"
             " alpha and beta are scalars\n\n");
-
-
     printf (" Initializing data for matrix multiplication C=A*B for matrix \n"
             " A(%ix%i) and matrix B(%ix%i)\n\n", m, k, k, n);
+    */
+
+    
     DATATYPE
     alpha = 1.0; beta = 0.0;
 
@@ -89,7 +91,7 @@ int main(int argc, char** argv)
     B = (MYFLOAT *)malloc( k*n*sizeof( MYFLOAT ));
     C = (MYFLOAT *)malloc( m*n*sizeof( MYFLOAT ));
     if (A == NULL || B == NULL || C == NULL) {
-      printf( "\n ERROR: Can't allocate memory for matrices. Aborting... \n\n");
+      // printf( "\n ERROR: Can't allocate memory for matrices. Aborting... \n\n");
       free(A);
       free(B);
       free(C);
@@ -109,7 +111,7 @@ int main(int argc, char** argv)
     }
 
     sleep(1);
-    printf (" Computing matrix product using gemm function via CBLAS interface \n");
+    // printf (" Computing matrix product using gemm function via CBLAS interface \n");
     clock_gettime(CLOCK_MONOTONIC, &begin);
     GEMMCPU(CblasColMajor, CblasNoTrans, CblasNoTrans,
                 m, n, k, alpha, A, m, B, k, beta, C, m);
@@ -118,7 +120,7 @@ int main(int argc, char** argv)
     double gflops = 2.0 * m *n*k;
     gflops = gflops/elapsed*1.0e-9; 
     printf ("\n Elapsed time %d.%d s\n\n\n", diff(begin,end).tv_sec, diff(begin,end).tv_nsec );
-    printf("%dx%dx%d\t%lf s\t%lf GFLOPS\n", m, n, k, elapsed, gflops);
+    printf("Size: %dx%dx%d\tTime: %lf s\tGFLOPS: %lf\n", m, n, k, elapsed, gflops);
 
 
 #ifdef PRINT
