@@ -15,7 +15,7 @@ module load openBLAS/0.3.23-omp
 srun -n1 make cpu # Now I have all the needed executables.
 
 
-for m_size in {11000..20000..1000}
+for m_size in {2000..20000..1000}
 do
     # Run everything with openBLAS double
     for j in 1 2 3 4 5 # Take multiple measurements
@@ -29,7 +29,7 @@ do
         filename="OBLAS_double_$size.csv"
 
         if [ ! -e $filename ]; then
-		echo "Size, Time, GFLOPS" > $filename
+		echo "Size,Time,GFLOPS" > $filename
         fi
         echo "$size,$times,$gflops" >> $filename
     done
