@@ -5,7 +5,7 @@
 #SBATCH --ntasks-per-node=1 
 #SBATCH --cpus-per-task=64
 #SBATCH --mem=200gb 
-#SBATCH --time=01:00:00 
+#SBATCH --time=02:00:00 
 #SBATCH --output=output.out
 
 module load architecture/AMD
@@ -16,7 +16,7 @@ srun -n1 make cpu # Now I have all the needed executables.
 
 rm -rf *.csv # Remove previous csv file.
 
-for m_size in 1000 2000
+for m_size in {2000..10000..1000}
 do
     # Run everything with openBLAS double
     for j in 1 2 3 4 5 # Take multiple measurements
