@@ -29,12 +29,10 @@ do
         # Store the extracted information in a CSV file
         filename="OBLAS_double_$size.csv"
 
-	echo "Doing the first one we have that size is $size, time is $time, gflops is $gflops"
-
         if [ ! -e $filename ]; then
 		echo "Size, Time, GFLOPS" > $filename
         fi
-        echo "$size,$time,$gflops" >> $filename
+        echo "$size,$times,$gflops" >> $filename
     done
 
     # Run everything with openBLAS float
@@ -52,7 +50,7 @@ do
         if [ ! -e $filename ]; then
             echo "Size,Time,GFLOPS" > $filename
         fi
-        echo "$size,$time,$gflops" >> $filename
+        echo "$size,$times,$gflops" >> $filename
     done
 
     # Now repeat for MKL library
@@ -70,7 +68,7 @@ do
         if [ ! -e $filename ]; then
             echo "Size,Time,GFLOPS" > $filename
         fi
-        echo "$size,$time,$gflops" >> $filename
+        echo "$size,$times,$gflops" >> $filename
     done
 
     # Now repeat for MKL library float
@@ -88,6 +86,6 @@ do
         if [ ! -e $filename ]; then
             echo "Size,Time,GFLOPS" > $filename
         fi
-        echo "$size,$time,$gflops" >> $filename
+        echo "$size,$times,$gflops" >> $filename
     done
 done
