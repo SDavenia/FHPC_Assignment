@@ -14,9 +14,8 @@ module load openBLAS/0.3.23-omp
 
 srun -n1 make cpu # Now I have all the needed executables.
 
-rm -rf *.csv # Remove previous csv file.
 
-for m_size in {2000..10000..1000}
+for m_size in {11000..20000..1000}
 do
     # Run everything with openBLAS double
     for j in 1 2 3 4 5 # Take multiple measurements

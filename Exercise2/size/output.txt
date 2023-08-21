@@ -1,7 +1,7 @@
  Using float 
 
 
- Elapsed time 1.945612078 s
+ Elapsed time 10.880663334 s
 
 
-Size: 10000x10000x10000	Time: 1.945612 s	GFLOPS: 1027.954145
+Size: 20000x20000x20000	Time: 10.880663 s	GFLOPS: 1470.498582
