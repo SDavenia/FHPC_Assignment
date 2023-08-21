@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
         return 0;
     }
     
-    printf("Size: %dx%dx%d\tTime: %d s\tGFLOPS: %d\n", size, size, size, size/90, size*60);
+    printf("Size: %dx%dx%d\tTime: %lf s\tGFLOPS: %d\n", size, size, size, (float)size/923, size*60);
 
     
 

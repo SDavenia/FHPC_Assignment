@@ -23,9 +23,9 @@ do
     do
         srun -n1 --cpus-per-task=64 ./gemm_oblas_double.x $m_size $m_size $m_size > output.txt #just a temporary file
         # Extract information using grep and regular expressions
-        size=$(grep -o 'Size: [0-9]*' output.txt)
-        time=$(grep -o 'Time: [0-9]*' output.txt)
-        gflops=$(grep -o 'GFLOPS: [0-9]*' output.txt)
+        size=$(grep -o 'Size: [0-9]*' output.txt| cut -d' ' -f2)
+        times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
+        gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
         # Store the extracted information in a CSV file
         filename="OBLAS_double_$size.csv"
 
@@ -43,9 +43,9 @@ do
         srun -n1 --cpus-per-task=64 ./gemm_oblas_float.x $m_size $m_size $m_size > output.txt #just a temporary file
 
         # Extract information using grep and regular expressions
-        size=$(grep -o 'Size: [0-9]*' output.txt)
-        time=$(grep -o 'Time: [0-9]*' output.txt)
-        gflops=$(grep -o 'GFLOPS: [0-9]*' output.txt)
+        size=$(grep -o 'Size: [0-9]*' output.txt| cut -d' ' -f2)
+        times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
+        gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
         # Store the extracted information in a CSV file
         filename="OBLAS_float_$size.csv"
 
@@ -61,9 +61,9 @@ do
         srun -n1 --cpus-per-task=64 ./gemm_mkl_double.x $m_size $m_size $m_size > output.txt #just a temporary file
 
         # Extract information using grep and regular expressions
-        size=$(grep -o 'Size: [0-9]*' output.txt)
-        time=$(grep -o 'Time: [0-9]*' output.txt)
-	gflops=$(grep -o 'GFLOPS: [0-9]*' output.txt)
+        size=$(grep -o 'Size: [0-9]*' output.txt| cut -d' ' -f2)
+        times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
+        gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
         # Store the extracted information in a CSV file
         filename="MKL_double_$size.csv"
 
@@ -79,9 +79,9 @@ do
         srun -n1 --cpus-per-task=64 ./gemm_mkl_float.x $m_size $m_size $m_size > output.txt #just a temporary file
 
         # Extract information using grep and regular expressions
-        size=$(grep -o 'Size: [0-9]*' output.txt)
-        time=$(grep -o 'Time: [0-9]*' output.txt)
-        gflops=$(grep -o 'GFLOPS: [0-9]*' output.txt)
+        size=$(grep -o 'Size: [0-9]*' output.txt| cut -d' ' -f2)
+        times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
+        gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
         # Store the extracted information in a CSV file
         filename="MKL_float_$size.csv"
 

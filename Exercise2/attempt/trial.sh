@@ -13,16 +13,17 @@ do
         ./OB.x $i > output.txt #just a temporary file
 
         # Extract information using grep and regular expressions
-        size=$(grep -o 'Size: [0-9]*' output.txt | cut -d' ' -f2)
-        time=$(grep -o 'Time: [0-9]*' output.txt | cut -d' ' -f2)
-        gflops=$(grep -o 'GFLOPS: [0-9]*' output.txt | cut -d' ' -f2)
+        size=$(grep -o 'Size: [0-9]*' output.txt| cut -d' ' -f2)
+        times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
+        gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
         # Store the extracted information in a CSV file
+        echo "$size,$times,$gflops"
         filename="OBLAS_$size.csv"
 
         if [ ! -e $filename ]; then
             echo "Size,Time,GFLOPS" > $filename
         fi
-        echo "$size,$time,$gflops" >> $filename
+        echo "$size,$times,$gflops" >> $filename
     done
 
     # Now repeat for MKL library
@@ -32,15 +33,15 @@ do
 
         # Extract information using grep and regular expressions
         size=$(grep -o 'Size: [0-9]*' output.txt | cut -d' ' -f2)
-        time=$(grep -o 'Time: [0-9]*' output.txt | cut -d' ' -f2)
-        gflops=$(grep -o 'GFLOPS: [0-9]*' output.txt | cut -d' ' -f2)
+        times=$(grep -o 'Time: [0-9.]*' output.txt)
+        gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt | cut -d' ' -f2)
         # Store the extracted information in a CSV file
         filename="MKL_$size.csv"
 
         if [ ! -e $filename ]; then
             echo "Size,Time,GFLOPS" > $filename
         fi
-        echo "$size,$time,$gflops" >> $filename
+        echo "$size,$times,$gflops" >> $filename
     done
 
 done
