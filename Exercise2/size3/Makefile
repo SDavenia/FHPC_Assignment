@@ -5,8 +5,9 @@ MKL= -L${MKLROOT}/lib/intel64  -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgo
 
 ### OpenBLAS libraries 
 OPENBLASROOT=${OPENBLAS_ROOT}
+
 ### BLIS library
-#BLISROOT=/u/area/cozzini/myblis
+BLISROOT=/u/dssc/sdaven00/myblis
 
 cpu: gemm_mkl_double.x gemm_oblas_double.x gemm_mkl_float.x gemm_oblas_float.x  #gemm_blis.x
 
@@ -24,8 +25,9 @@ gemm_oblas_float.x: ../gemm.c
 	gcc -DUSE_FLOAT -DOPENBLAS $^ -m64 -I${OPENBLASROOT}/include -L/${OPENBLASROOT}/lib -lopenblas -lpthread -o $@ -fopenmp
 
 
-#gemm_blis.x: gemm.c
-#	gcc -DUSE_DOUBLE  -DBLIS $^ -m64 -I${BLISROOT}/include/blis -L/${BLISROOT}/lib -o $@ -lpthread  -lblis -fopenmp -lm
+gemm_blis.x: gemm.c
+	gcc -DUSE_DOUBLE  -DBLIS $^ -m64 -I${BLISROOT}/include/blis -L/${BLISROOT}/lib -o $@ -lpthread  -lblis -fopenmp -lm
+
 clean:
 	rm -rf *.x
 	rm -rf *.txt
