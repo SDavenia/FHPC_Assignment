@@ -16,6 +16,9 @@ export LD_LIBRARY_PATH=/u/dssc/sdaven00/myblis/lib:$LD_LIBRARY_PATH
 export OMP_NUM_THREADS=64
 export BLIS_NUM_THREADS=64 
 
+export OMP_PLACES=cores
+export OMP_PROC_BIND=spread
+
 srun -n1 make cpu # Now I have all the needed executables.
 
 
@@ -34,7 +37,7 @@ do
                 times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
                 gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
                 # Store the extracted information in a CSV file
-                filename="$implem"_"$type"_$size.csv
+                filename=spread/"$implem"_"$type"_$size.csv
 
                 if [ ! -e $filename ]; then
                 echo "Size,Time,GFLOPS" > $filename

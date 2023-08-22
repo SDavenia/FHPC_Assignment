@@ -19,13 +19,12 @@ export BLIS_NUM_THREADS=64
 srun -n1 make cpu # Now I have all the needed executables.
 
 
-for implem in 'blis'
+for implem in 'oblas' 'mkl' 'blis'
 do
     for type in 'double' 'float'
     do
-        for m_size in {2000..20000..1000}
+        for m_size in {2000..3000..1000}
         do
-            # Run everything with openBLAS double
             for j in 1 2 3 4 5 # Take multiple measurements
             do
                 srun -n1 --cpus-per-task=64 ./gemm_"$implem"_"$type".x $m_size $m_size $m_size > output.txt #just a temporary file
@@ -34,7 +33,7 @@ do
                 times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
                 gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
                 # Store the extracted information in a CSV file
-                filename="$implem"_"$type"_$size.csv
+                filename=default/"$implem"_"$type"_$size.csv
 
                 if [ ! -e $filename ]; then
                 echo "Size,Time,GFLOPS" > $filename
@@ -44,3 +43,4 @@ do
         done
     done
 done
+rm output.txt # Delete the temporary file
