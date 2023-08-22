@@ -44,3 +44,5 @@ do
         done
     done
 done
+rm output.txt # Delete the temporary file
+
