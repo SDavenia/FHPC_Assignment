@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=128
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
-#SBATCH --output=output.out
+#SBATCH --output=cores_close.out
 
 module load architecture/AMD
 module load mkl
@@ -34,11 +34,11 @@ do
             # Run everything with openBLAS double
             for j in 1 2 3 4 5 # Take multiple measurements
             do
-                srun -n1 --cpus-per-task=64 ./gemm_"$implem"_"$type".x $m_size $m_size $m_size > output.txt #just a temporary file
+                srun -n1 --cpus-per-task=64 ./gemm_"$implem"_"$type".x $m_size $m_size $m_size > output_close.txt #just a temporary file
                 
                 # Extract information using grep and regular expressions
-                times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
-                gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
+                times=$(grep -o 'Time: [0-9.]*' output_close.txt| cut -d' ' -f2)
+                gflops=$(grep -o 'GFLOPS: [0-9.]*' output_close.txt| cut -d' ' -f2)
                 # Store the extracted information in a CSV file
                 filename=close/"$implem"_"$type"_$n_threads.csv
 
@@ -50,4 +50,4 @@ do
         done
     done
 done
-rm output.txt # Delete the temporary file
+rm output_close.txt # Delete the temporary file

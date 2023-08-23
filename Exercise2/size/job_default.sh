@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=64
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
-#SBATCH --output=output.out
+#SBATCH --output=size_default.out
 
 module load architecture/AMD
 module load mkl
@@ -30,7 +30,7 @@ do
             do
                 srun -n1 --cpus-per-task=64 ./gemm_"$implem"_"$type".x $m_size $m_size $m_size > output.txt #just a temporary file
                 # Extract information using grep and regular expressions
-                size=$(grep -o 'Size: [0-9]*' output.txt| cut -d' ' -f2)
+                size=$m_size
                 times=$(grep -o 'Time: [0-9.]*' output.txt| cut -d' ' -f2)
                 gflops=$(grep -o 'GFLOPS: [0-9.]*' output.txt| cut -d' ' -f2)
                 # Store the extracted information in a CSV file
