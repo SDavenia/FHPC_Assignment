@@ -1,20 +1,20 @@
 #!/bin/bash 
 #SBATCH --partition=THIN 
-#SBATCH --job-name=gemm_thin_default
+#SBATCH --job-name=gemm
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
-#SBATCH --cpus-per-task=64
+#SBATCH --cpus-per-task=12
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
 #SBATCH --output=size_close.out
 
-module load architecture/Intel
+module load architecture/AMD
 module load mkl
 module load openBLAS/0.3.23-omp
 
 export LD_LIBRARY_PATH=/u/dssc/sdaven00/myblis/lib:$LD_LIBRARY_PATH
-export OMP_NUM_THREADS=64
-export BLIS_NUM_THREADS=64 
+export OMP_NUM_THREADS=12
+export BLIS_NUM_THREADS=12
 
 export OMP_PLACES=cores
 export OMP_PROC_BIND=close
@@ -31,7 +31,7 @@ do
             # Run everything with openBLAS double
             for j in 1 2 3 4 5 # Take multiple measurements
             do
-                srun -n1 --cpus-per-task=64 ./gemm_"$implem"_"$type".x $m_size $m_size $m_size > output_close.txt #just a temporary file
+                srun -n1 --cpus-per-task=12 ./gemm_"$implem"_"$type".x $m_size $m_size $m_size > output_close.txt #just a temporary file
                 # Extract information using grep and regular expressions
                 size=$m_size
                 times=$(grep -o 'Time: [0-9.]*' output_close.txt| cut -d' ' -f2)

@@ -34,7 +34,7 @@ do
             # Run everything with openBLAS double
             for j in 1 2 3 4 5 # Take multiple measurements
             do
-                srun -n1 --cpus-per-task=64 ./gemm_"$implem"_"$type".x $m_size $m_size $m_size > output_close.txt #just a temporary file
+                srun -n1 --cpus-per-task=$n_threads ./gemm_"$implem"_"$type".x $m_size $m_size $m_size > output_close.txt #just a temporary file
                 
                 # Extract information using grep and regular expressions
                 times=$(grep -o 'Time: [0-9.]*' output_close.txt| cut -d' ' -f2)
