@@ -1,5 +1,5 @@
 #!/bin/bash 
-#SBATCH --partition=EPYC 
+#SBATCH --partition=THIN 
 #SBATCH --job-name=gemm_first_attempt
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
@@ -8,7 +8,7 @@
 #SBATCH --time=02:00:00 
 #SBATCH --output=cores_close.out
 
-module load architecture/AMD
+module load architecture/Intel
 module load mkl
 module load openBLAS/0.3.23-omp
 
@@ -22,7 +22,7 @@ srun -n1 make cpu # Now I have all the needed executables.
 m_size=10000
 
 
-for implem in 'mkl'
+for implem in 'oblas' 'mkl' 'blis'
 do
     for type in 'double' 'float'
     do
