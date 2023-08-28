@@ -23,15 +23,36 @@ int   n      = 10000;
 int   s      = 1;
 char *fname  = NULL;
 
+void init_matrix(int k, char *fname){
+  unsigned char* ptr = (unsigned char*)calloc(k*k, sizeof(unsigned char)); // creates a k*k array of unsigned char
+
+  for (int i = 0; i < k*k; i++) {
+    ptr[i] = (unsigned char) rand() % 2;
+  }
+  // Just to check if the matrix is ok
+  for (int j = 0; j < k*k; j++) {
+    printf("%u", ptr[j]);
+  }
+
+  //void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char *image_name)
+
+}
 
 int main ( int argc, char **argv )
 {
   int action = 0;
-  char *optstring = "irk:e:f:n:s:";
+  char *optstring = "irk:e:f:n:s:"; //optstring is a list of characters, each representing a single character option
 
   int c;
+  /*
+  Generally, the getopt() function is called from inside of a loop’s conditional statement.
+  The loop terminates when the getopt() function returns -1.
+  A switch statement is then executed with the value returned by getopt() function.
+  */
   while ((c = getopt(argc, argv, optstring)) != -1) {
     switch(c) {
+      //c takes the current option (ex. k)
+      // optarg takes the value of the current option (ex. 400 for k)
       
     case 'i':
       action = INIT; break;
@@ -48,6 +69,7 @@ int main ( int argc, char **argv )
     case 'f':
       fname = (char*)malloc( sizeof(optarg)+1 );
       sprintf(fname, "%s", optarg );
+      printf("%s \n",fname);
       break;
 
     case 'n':
@@ -59,6 +81,14 @@ int main ( int argc, char **argv )
     default :
       printf("argument -%c not known\n", c ); break;
     }
+  }
+  if(action == INIT){
+    // create initial conditions
+    printf("Initialize\n");
+    init_matrix(k,fname);
+  }else{
+    // run a play ground
+    printf("Run\n");
   }
 
     if ( fname != NULL )
