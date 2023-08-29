@@ -1,4 +1,5 @@
-
+// To compile: gcc -o exec read_write_pgm_image.c get_args.c
+// To run executable: ./exec -i -k 10000 -f myfile.pgm
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
