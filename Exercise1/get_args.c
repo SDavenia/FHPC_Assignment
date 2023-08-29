@@ -78,7 +78,7 @@ int main ( int argc, char **argv )
       e = atoi(optarg); break;
 
     case 'f':
-      fname = (char*)malloc( sizeof(optarg)+1 );
+      fname = (char*)malloc( sizeof(optarg)+1 ); //fname now is an "array of char" variable (a string)
       sprintf(fname, "%s", optarg );
       printf("%s \n",fname);
       break;
@@ -102,14 +102,15 @@ int main ( int argc, char **argv )
     printf("Run\n");
   }
 
-  //void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const char *image_name)
   int xsize;
   int ysize;
   int maxval;
-  unsigned char* myimage;
-  read_pgm_image(&myimage, &maxval, &xsize, &ysize,fname);
-  if ( fname != NULL )
+  unsigned char* myimage; 
+  // myimage is a pointer so with &myimage I access the address of the pointer => pointer of a pointer
+  read_pgm_image(&myimage, &maxval, &xsize, &ysize, fname);
+  
+  if ( fname != NULL ){
     free ( fname );
-
+  }
   return 0;
 }
