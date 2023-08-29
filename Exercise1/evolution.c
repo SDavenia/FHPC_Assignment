@@ -252,7 +252,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
         
         // Now that they are correct, update the top corners using the values you just calculated 
         // No need to update them before since they are only needed later
-        current[0] = current[(k+1)*(k+2)-1];   // Top left corner
+        current[0] = current[(k+1)*(k+2)-2];   // Top left corner
         current[(k+2)-1] = current[(k*(k+2))+1]; // Top right corner
 
         printf("Result after %d steps:\n", n+1);
@@ -262,7 +262,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
 
 
 int main(int argc, char* argv[]){
-    int n_steps = 1;
+    int n_steps = 2;
     int k = 4;
 
     printf("HI\n");
