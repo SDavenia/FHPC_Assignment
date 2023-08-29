@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+/*
+In all these functions we have that k is the dimension of the matrices, which are assumed to be square.
+*/
 
 void print_image(unsigned char* ptr, int ncol){
     for(int i = 0; i < ncol; i++){
@@ -46,8 +49,52 @@ void initialize_current(unsigned char* input, unsigned char* current, int k){
     current[(k+2) - 1] = input[k*(k-1)]; // Top right of current
     current[(k+1)*(k+2)] = input[k-1]; // Bottom left of current
     current[(k+2)*(k+2)-1] = input[0]; // Bottom right of current
-
 }
+
+void evolve_static(unsigned char* current, unsigned char* next, int k){
+    // We work with i and j referring to the extended matrix unlike before
+
+    // Start by updating the internal values
+    for(int i = 1; i < k+2; i++){
+        for(int j = 1; j < k+2; j++){
+            int alive_neighbours = current[(i+1)*k + j] + current[(i-1)*k + j] + current[(i)*k + (j+1)] + 
+                                   current[(i)*k + (j-1)] + current[(i+1)*k + (j+1)] + current[(i+1)*k + (j-1)] + 
+                                   current[(i-1)*k + (j-1)] + current[(i-1)*k + (j+1)];
+            if (alive_neighbours > 3 | alive_neighbours < 2)
+                next[i*k + j] = 0; // Dead
+            else
+                next[i*k + j] = 1; // Alive
+        }
+    }
+
+    // Now update the frame accordingly
+    // First row
+    for(int i = 1; i < k+2; i++){
+        next[i] = next[(k)*(k+2) + i]; // row k is the last inner row
+    }
+
+    // Last row
+    for(int i = 1; i < k+2; i++){
+        next[(k+1)*(k+2) + i] = next[(k+2) + i];
+    }
+
+    // First column
+    for(int i = 1; i < k+2; i++){
+        next[(k+2)*i] = next[(k+2)*(i+1) - 2];
+    }
+
+    // Last column
+    for(int i = 1; i < k+2; i++){
+        next[(k+2)*(i+1) - 1] = next[(i)*(k+2) + 1];
+    } 
+
+    // Update the corners
+    next[0] = next[(k+1)*(k+2)-2];          // Top left corner
+    next[(k+2)-1] = next[(k)*(k+2)+1];      // Top right corner
+    next[(k+1)*(k+2)] = next[2*(k+2)-2];    // Bottom left corner
+    next[(k*2)*(k*2)-1] = next[(k+2)+1];    // Bottom right corner
+}
+
 
 int main(int argc, char* argv[]){
     int n_steps = 5;
@@ -68,10 +115,15 @@ int main(int argc, char* argv[]){
     
     print_image(input, k);
 
-    printf("\nNow we initialize\n\n");
+    printf("\nNow we initialize by adding the frame\n\n");
 
     initialize_current(input, current, k);
     print_image(current, k+2);
+    printf("\nNow we evolve\n\n");
+
+    evolve_static(current, next, k);
+    print_image(next, k+2);
+
 
     free(input);
     free(current);
