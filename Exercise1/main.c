@@ -1,5 +1,6 @@
 // To compile: gcc main.c -o main.exe
 // To run executable to generate playground: ./main.exe -i -k 5 -f init.pgm
+// To run execubtable to play on playground: ./main.exe -r -k 5 -f init.pgm -n 3
 // 
 #include <stdlib.h>
 #include <stdio.h>
@@ -119,7 +120,6 @@ int main ( int argc, char **argv )
     read_pgm_image(&input, &maxval, &xsize, &ysize, fname);
 
 
-    int k = xsize;
     printf("READING THE INITIAL ONE\n");
     print_image(input, k);
 
