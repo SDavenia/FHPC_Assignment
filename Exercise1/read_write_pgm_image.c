@@ -80,7 +80,7 @@ void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char 
 }
 
 
-void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const char *image_name)
+void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name)
 /*
  * image        : a pointer to the pointer that will contain the image
  * maxval       : a pointer to the int that will store the maximum intensity in the image
@@ -90,7 +90,7 @@ void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const ch
  */
 {
   FILE* image_file; 
-  image_file = fopen(image_name, "r"); 
+  image_file = fopen(image_name, "r");
 
   *image = NULL;
   *xsize = *ysize = *maxval = 0;
@@ -125,7 +125,7 @@ void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const ch
   int color_depth = 1 + ( *maxval > 255 );
   unsigned int size = *xsize * *ysize * color_depth;
   
-  if ( (*image = (char*)malloc( size )) == NULL )
+  if ( (*image = (unsigned char*)malloc( size )) == NULL )
     {
       fclose(image_file);
       *maxval = -2;         // this is the signal that memory was insufficient
@@ -141,7 +141,10 @@ void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const ch
       *maxval = -3;         // this is the signal that there was an i/o error
       *xsize  = 0;
       *ysize  = 0;
-    }  
+    }
+  for (int u = 0; u < size; u++) {
+    printf("%u\t", image[u]);
+  }
 
   fclose(image_file);
   return;
