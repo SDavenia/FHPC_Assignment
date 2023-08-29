@@ -4,6 +4,11 @@
 #include <string.h>
 #include <getopt.h>
 
+#ifndef READ_WRITE_PGM
+#define READ_WRITE_PGM
+void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name);
+#endif
+
 
 #define INIT 1
 #define RUN  2
@@ -34,7 +39,7 @@ void init_matrix(int k, char *fname){
     printf("%u", ptr[j]);
   }
 
-  //void write_pgm_image( void *image, int maxval, int xsize, int ysize, const char *image_name)
+  write_pgm_image(ptr, 255, k, k,fname);
 
 }
 
