@@ -110,8 +110,8 @@ int main(int argc, char* argv[]){
     input[4] = 1;
 
     // Allocate memory for new ones, and create frame
-    unsigned char* current = (unsigned char*)calloc((k+1)*(k+1), sizeof(unsigned char)); 
-    unsigned char* next = (unsigned char*)malloc((k+1)*(k+1)*sizeof(unsigned char));
+    unsigned char* current = (unsigned char*)calloc((k+2)*(k+2), sizeof(unsigned char)); 
+    unsigned char* next = (unsigned char*)malloc((k+2)*(k+2)*sizeof(unsigned char));
     
     print_image(input, k);
 
@@ -128,6 +128,5 @@ int main(int argc, char* argv[]){
     free(input);
     free(current);
     free(next);
-
 }
 
