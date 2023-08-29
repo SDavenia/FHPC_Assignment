@@ -148,22 +148,21 @@ void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize,
   
   if ( fread( *image, 1, size, image_file) != size )
     {
+      printf("Here\n");
       free( image );
       image   = NULL;
       *maxval = -3;         // this is the signal that there was an i/o error
       *xsize  = 0;
       *ysize  = 0;
-    }
-  /*
-  printf("Address of the first element of image: %p\n", *image);*/
-  printf("First element of image: %u\n", **(image+2));
-  printf("First element of image: %u\n", *image[2]);
-  
-  /*
+    }  
+/*
   for (int u = 0; u < 9; u++) {
-    printf("%u\t", *image[u]);
+    //printf("%u\t", (*image)[u]);
+    printf("%u\t", *(*image+u));
   }
-  */
+*/
+  printf("\n");
+  
   fclose(image_file);
   return;
 }

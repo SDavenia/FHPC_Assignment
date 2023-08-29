@@ -7,6 +7,7 @@
 
 void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name);
 void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name);
+//void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const char *image_name);
 
 #define INIT 1
 #define RUN  2
@@ -40,10 +41,12 @@ void init_matrix(int k, char *fname){
   }
   
   // Just to check if the matrix is ok
+  /*
   for (int j = 0; j < k*k; j++) {
     printf("%u\t", ptr[j]);
   }
   printf("\n");
+  */
   
   write_pgm_image(ptr, 255, k, k,fname);
 
@@ -106,6 +109,7 @@ int main ( int argc, char **argv )
   int ysize;
   int maxval;
   unsigned char* myimage; 
+  //void* myimage;
   // myimage is a pointer so with &myimage I access the address of the pointer => pointer of a pointer
   read_pgm_image(&myimage, &maxval, &xsize, &ysize, fname);
   
