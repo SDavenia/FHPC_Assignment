@@ -1,11 +1,12 @@
-// To compile: gcc -o exec read_write_pgm_image.c get_args.c
-// To run executable: ./exec -i -k 10000 -f myfile.pgm
+// To compile: gcc -o exec.exe read_write_pgm_image.c get_args.c
+// To run executable: ./exec.exe -i -k 10000 -f init.pgm
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
 
 void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name);
+void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name);
 
 #define INIT 1
 #define RUN  2
@@ -28,6 +29,7 @@ char *fname  = NULL;
 void init_matrix(int k, char *fname){
   unsigned char* ptr = (unsigned char*)calloc(k*k, sizeof(unsigned char)); // creates a k*k array of unsigned char
 
+  // generate a random matrix of 0 and 255
   for (int i = 0; i < k*k; i++) {
     unsigned char rand_num = (unsigned char) rand() % 2;
     if(rand_num==1){
@@ -36,13 +38,13 @@ void init_matrix(int k, char *fname){
       ptr[i]=rand_num;
     }
   }
-  /*
+  
   // Just to check if the matrix is ok
   for (int j = 0; j < k*k; j++) {
     printf("%u\t", ptr[j]);
   }
   printf("\n");
-  */
+  
   write_pgm_image(ptr, 255, k, k,fname);
 
 }
@@ -100,8 +102,14 @@ int main ( int argc, char **argv )
     printf("Run\n");
   }
 
-    if ( fname != NULL )
-      free ( fname );
+  //void read_pgm_image( void **image, int *maxval, int *xsize, int *ysize, const char *image_name)
+  int xsize;
+  int ysize;
+  int maxval;
+  unsigned char* myimage;
+  read_pgm_image(&myimage, &maxval, &xsize, &ysize,fname);
+  if ( fname != NULL )
+    free ( fname );
 
   return 0;
 }
