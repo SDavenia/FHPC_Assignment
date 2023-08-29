@@ -35,12 +35,13 @@ void init_matrix(int k, char *fname){
       ptr[i]=rand_num;
     }
   }
+  /*
   // Just to check if the matrix is ok
   for (int j = 0; j < k*k; j++) {
     printf("%u\t", ptr[j]);
   }
   printf("\n");
-
+  */
   write_pgm_image(ptr, 255, k, k,fname);
 
 }
