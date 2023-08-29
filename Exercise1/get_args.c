@@ -4,11 +4,7 @@
 #include <string.h>
 #include <getopt.h>
 
-#ifndef READ_WRITE_PGM
-#define READ_WRITE_PGM
 void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name);
-#endif
-
 
 #define INIT 1
 #define RUN  2
@@ -32,12 +28,18 @@ void init_matrix(int k, char *fname){
   unsigned char* ptr = (unsigned char*)calloc(k*k, sizeof(unsigned char)); // creates a k*k array of unsigned char
 
   for (int i = 0; i < k*k; i++) {
-    ptr[i] = (unsigned char) rand() % 2;
+    unsigned char rand_num = (unsigned char) rand() % 2;
+    if(rand_num==1){
+      ptr[i] = 255;
+    }else{
+      ptr[i]=rand_num;
+    }
   }
   // Just to check if the matrix is ok
   for (int j = 0; j < k*k; j++) {
-    printf("%u", ptr[j]);
+    printf("%u\t", ptr[j]);
   }
+  printf("\n");
 
   write_pgm_image(ptr, 255, k, k,fname);
 

@@ -230,7 +230,7 @@ void * generate_gradient( int maxval, int xsize, int ysize )
 
 
 
-
+/*
 int main( int argc, char **argv ) 
 { 
     int xsize      = XWIDTH;
@@ -241,7 +241,7 @@ int main( int argc, char **argv )
     printf("this machine is %s\n", (I_M_LITTLE_ENDIAN)?"little endian":"big endian");
 
     // you can use also the system-defined macro LITTLE_ENDIAN
-    printf("2nd check: this machine definitely is %s\n", (LITTLE_ENDIAN)?"little endian":"big endian");
+    printf("2nd check: this machine definitely is %s\n", (I_M_LITTLE_ENDIAN)?"little endian":"big endian");
     
     if ( argc > 1 )
       {
@@ -300,6 +300,7 @@ int main( int argc, char **argv )
     free(ptr);
     return 0;
 } 
+*/
 
 
 
