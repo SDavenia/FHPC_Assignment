@@ -130,7 +130,6 @@ int main ( int argc, char **argv )
 
     printf("INITALIZING THE FRAME\n");
     unsigned char* current = (unsigned char*)calloc((k+2)*(k+2), sizeof(unsigned char));
-    printf("After calloc\n");
     double Tstart_init = CPU_TIME;
     initialize_current(input, current, k);
     double Time_init = CPU_TIME - Tstart_init;
@@ -518,6 +517,6 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
         current[(k+2)-1] = current[(k*(k+2))+1]; // Top right corner
 
         //printf("Result after %d steps:\n", n+1);
-        print_image(current, k+2);
+        //print_image(current, k+2);
     }
 }
