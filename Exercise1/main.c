@@ -370,13 +370,18 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
     }
     next[(k*2)*(k*2)-1] = next[(k+2)+1];    // Bottom right corner
 
+    printf("I have done the minor for loops as well");
     // Swap the pointers so that you have the right one
     unsigned char* tmp;
+    printf("TEMPORARY POINTER DECLARED");
     // printf("next is at %p\n", next);
     // printf("current is at %p\n", current);
     tmp = next;
+    printf("tmp = next");
     next = current;
+    printf("next = current");
     current = tmp;
+    printf("current = tmp");
     // printf("next is at %p\n", next);
     // printf("current is at %p\n", current);
 
