@@ -299,7 +299,6 @@ void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, co
 
 void initialize_current(unsigned char* input, unsigned char* current, int k){
 
-  printf("Inside initialize_current\n");
   current[0] = input[k*k-1]; // Top left of current
   // Last row of input -> First row of current
   for (int i = 0; i < k; i++){
@@ -307,21 +306,18 @@ void initialize_current(unsigned char* input, unsigned char* current, int k){
   }
   current[(k+2) - 1] = input[k*(k-1)]; // Top right of current
 
-  printf("First loop done\n");
 
   // Initialize the inner values
   for(int i = 0; i < k; i++){
-    if(i%1000==0){
-      printf("i=%d\n",i);
-    }
+    // First column of that row
     current[(i+1)*(k+2)] = input[(i+1)*k - 1];
     for(int j = 0; j < k; j++){
       current[(i+1)*(k+2) + (j+1)] = input[i*k + j];
     }
+    // Last column of that row
     current[(i+2)*(k+2)-1] = input[i*k];
   }
 
-  printf("Second loop done\n");
   current[(k+1)*(k+2)] = input[k-1]; // Bottom left of current
 
   // Initialize the corners and the frame rows and columns
@@ -333,65 +329,53 @@ void initialize_current(unsigned char* input, unsigned char* current, int k){
 }
 
 void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps){
-    for (int n = 0; n < n_steps; n++){
+  for (int n = 0; n < n_steps; n++){
 
-        // Start by updating the internal values
-        for(int i = 1; i < k+1; i++){
-            for(int j = 1; j < k+1; j++){
-                int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                                    current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                                    current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-                alive_neighbours /= 255;
-                //printf("I am (%d, %d) and I have %d\n", i, j,  alive_neighbours);
-                if (alive_neighbours > 3 || alive_neighbours < 2)
-                    next[i*(k+2) + j] = 0; // Dead
-                else
-                    next[i*(k+2) + j] = 255; // Alive
-            }
-        }
-
-        // Now update the frame accordingly
-        // First row
-        for(int i = 1; i < k+2; i++){
-            next[i] = next[(k)*(k+2) + i]; // row k is the last inner row
-        }
-
-        // Last row
-        for(int i = 1; i < k+2; i++){
-            next[(k+1)*(k+2) + i] = next[(k+2) + i];
-        }
-
-        // First column
-        for(int i = 1; i < k+2; i++){
-            next[(k+2)*i] = next[(k+2)*(i+1) - 2];
-        }
-
-        // Last column
-        for(int i = 1; i < k+2; i++){
-            next[(k+2)*(i+1) - 1] = next[(i)*(k+2) + 1];
-        } 
-
-        // Update the corners
-        next[0] = next[(k+1)*(k+2)-2];          // Top left corner
-        next[(k+2)-1] = next[(k)*(k+2)+1];      // Top right corner
-        next[(k+1)*(k+2)] = next[2*(k+2)-2];    // Bottom left corner
-        next[(k*2)*(k*2)-1] = next[(k+2)+1];    // Bottom right corner
-
-
-        // Swap the pointers so that you have the right one
-        unsigned char* tmp;
-        // printf("next is at %p\n", next);
-        // printf("current is at %p\n", current);
-        tmp = next;
-        next = current;
-        current = tmp;
-        // printf("next is at %p\n", next);
-        // printf("current is at %p\n", current);
-
-        // printf("PRINTING CURRENT\n");
-        printf("Result after iteration %d:\n", n+1);
-        //print_image(current, k+2);
+    // Start by updating the internal values
+    for(int i = 1; i < k+1; i++){
+      next[(k+2)*(i+1) - 1] = next[(i)*(k+2) + 1];
+      for(int j = 1; j < k+1; j++){
+          int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
+                              current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
+                              current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
+          //alive_neighbours /= 255;
+          //printf("I am (%d, %d) and I have %d\n", i, j,  alive_neighbours);
+          if (alive_neighbours > 765 || alive_neighbours < 510)
+              next[i*(k+2) + j] = 0; // Dead
+          else
+              next[i*(k+2) + j] = 255; // Alive
+      }
+      next[(k+2)*i] = next[(k+2)*(i+1) - 2]; // First column of the border
     }
+    // Now update the frame accordingly
+    // First row
+    next[0] = next[(k+1)*(k+2)-2];          // Top left corner
+    for(int i = 1; i < k+2; i++){
+      next[i] = next[(k)*(k+2) + i]; // row k is the last inner row
+    }
+    next[(k+2)-1] = next[(k)*(k+2)+1];      // Top right corner
+
+    // Last row
+    next[(k+1)*(k+2)] = next[2*(k+2)-2];    // Bottom left corner
+    for(int i = 1; i < k+2; i++){
+      next[(k+1)*(k+2) + i] = next[(k+2) + i];
+    }
+    next[(k*2)*(k*2)-1] = next[(k+2)+1];    // Bottom right corner
+
+    // Swap the pointers so that you have the right one
+    unsigned char* tmp;
+    // printf("next is at %p\n", next);
+    // printf("current is at %p\n", current);
+    tmp = next;
+    next = current;
+    current = tmp;
+    // printf("next is at %p\n", next);
+    // printf("current is at %p\n", current);
+
+    // printf("PRINTING CURRENT\n");
+    printf("Result after iteration %d:\n", n+1);
+    //print_image(current, k+2);
+  }
     
 }
 
