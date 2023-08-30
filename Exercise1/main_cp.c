@@ -1,7 +1,7 @@
 // To compile: gcc main.c -o main.exe
 // To run executable to generate playground: ./main.exe -i -k 5 -f init.pgm
 // To run execubtable to play on playground: ./main.exe -r -k 5 -f init.pgm -n 3
-// OPTIMIZED
+// ORIGINAL MAIN
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -54,12 +54,11 @@ void random_playground(int k, char *fname){
 
   for (int i = 0; i < k*k; i++) {
     unsigned char rand_num = (unsigned char) rand_r(&seed) % 2;
-    ptr[i] = rand_num==1 ? 255 : 0;
-    /*if(rand_num==1){
+    if(rand_num==1){
       ptr[i] = 255;
     }else{
       ptr[i]=rand_num;
-    }*/
+    }
   }
   write_pgm_image(ptr, 255, k, k,fname);
   free(ptr); 
@@ -129,8 +128,7 @@ int main ( int argc, char **argv )
     //print_image(input, k);
 
     printf("INITALIZING THE FRAME\n");
-    unsigned char* current = (unsigned char*)calloc((k+2)*(k+2), sizeof(unsigned char));
-    printf("After calloc\n");
+    unsigned char* current = (unsigned char*)calloc((k+2)*(k+2), sizeof(unsigned char)); 
     double Tstart_init = CPU_TIME;
     initialize_current(input, current, k);
     double Time_init = CPU_TIME - Tstart_init;
@@ -152,7 +150,7 @@ int main ( int argc, char **argv )
         free(next);
     }
     double Time_exec = CPU_TIME - Tstart_exec;
-    printf("Execution time: %lf\n", Time_exec);
+    printf("Execution time: %lf\n", Time_init);
     free(current);
   }
 
@@ -299,37 +297,39 @@ void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, co
 
 void initialize_current(unsigned char* input, unsigned char* current, int k){
 
-  printf("Inside initialize_current\n");
-  current[0] = input[k*k-1]; // Top left of current
-  // Last row of input -> First row of current
-  for (int i = 0; i < k; i++){
-    current[i+1] = input[(k-1)*k + i];
-  }
-  current[(k+2) - 1] = input[k*(k-1)]; // Top right of current
-
-  printf("First loop done\n");
-
-  // Initialize the inner values
-  for(int i = 0; i < k; i++){
-    if(i%1000==0){
-      printf("i=%d\n",i);
+    // Initialize the innter values
+    for(int i = 0; i < k; i++){
+        for(int j = 0; j < k; j++){
+            current[(i+1)*(k+2) + (j+1)] = input[i*k + j];
+        }
     }
-    current[(i+1)*(k+2)] = input[(i+1)*k - 1];
-    for(int j = 0; j < k; j++){
-      current[(i+1)*(k+2) + (j+1)] = input[i*k + j];
+
+    // Initialize the corners and the frame rows and columns
+    // First row of input -> Last row of current
+    for (int i = 0; i < k; i++){
+        current[(k+1)*(k+2) + i + 1]=input[i];
     }
-    current[(i+2)*(k+2)-1] = input[i*k];
-  }
 
-  printf("Second loop done\n");
-  current[(k+1)*(k+2)] = input[k-1]; // Bottom left of current
+    // Last row of input -> First row of current
+    for (int i = 0; i < k; i++){
+        current[i+1] = input[(k-1)*k + i];
+    }
 
-  // Initialize the corners and the frame rows and columns
-  // First row of input -> Last row of current
-  for (int i = 0; i < k; i++){
-    current[(k+1)*(k+2) + i + 1]=input[i];
-  }
-  current[(k+2)*(k+2)-1] = input[0]; // Bottom right of current
+    // Last column of input -> First column of current
+    for (int i = 0; i < k; i++){
+        current[(i+1)*(k+2)] = input[(i+1)*k - 1];
+    }
+
+    // First column of input -> Last column of current
+    for(int i = 0; i < k; i++){
+        current[(i+2)*(k+2)-1] = input[i*k];
+    }
+
+    // Now add the corners
+    current[0] = input[k*k-1]; // Top left of current
+    current[(k+2) - 1] = input[k*(k-1)]; // Top right of current
+    current[(k+1)*(k+2)] = input[k-1]; // Bottom left of current
+    current[(k+2)*(k+2)-1] = input[0]; // Bottom right of current
 }
 
 void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps){
@@ -533,7 +533,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
         current[0] = current[(k+1)*(k+2)-2];   // Top left corner
         current[(k+2)-1] = current[(k*(k+2))+1]; // Top right corner
 
-        //printf("Result after %d steps:\n", n+1);
-        print_image(current, k+2);
+        printf("Result after %d steps:\n", n+1);
+        //print_image(current, k+2);
     }
 }
