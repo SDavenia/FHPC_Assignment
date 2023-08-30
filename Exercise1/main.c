@@ -22,6 +22,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps);
 
 #define ORDERED 0
 #define STATIC  1
+#define CPU_TIME (clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ), (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9)
 
 
 char fname_deflt[] = "game_of_life.pgm";
@@ -65,6 +66,7 @@ void random_playground(int k, char *fname){
 
 int main ( int argc, char **argv )
 {
+  struct timespec ts;
   int action = 0;
   char *optstring = "irk:e:f:n:s:"; //optstring is a list of characters, each representing a single character option
 
@@ -127,14 +129,17 @@ int main ( int argc, char **argv )
 
     printf("INITALIZING THE FRAME\n");
     unsigned char* current = (unsigned char*)calloc((k+2)*(k+2), sizeof(unsigned char)); 
+    double Tstart_init = CPU_TIME;
     initialize_current(input, current, k);
+    double Time_init = CPU_TIME - Tstart_init;
+    printf("Initializing time: %lf\n", Time_init);
 
     printf("FREE USELESS STUFF\n");
     free(input); // Since we do not need it anymore
     if (fname != NULL)
         free(fname);
 
-
+    double Tstart_exec = CPU_TIME;
     if(e == 0){ // Ordered
         printf("ORDERED EXECUTION\n");
         evolve_dynamic(current, k, n);
@@ -144,7 +149,8 @@ int main ( int argc, char **argv )
         evolve_static(current, next, k, n);
         free(next);
     }
-    printf("FREEING CURRENT!\n");
+    double Time_exec = CPU_TIME - Tstart_exec;
+    printf("Execution time: %lf\n", Time_init);
     free(current);
   }
 
