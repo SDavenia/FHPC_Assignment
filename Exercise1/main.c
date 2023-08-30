@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
+#include <time.h>
 
 void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name);
 void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name);
@@ -47,10 +48,11 @@ void random_playground(int k, char *fname){
     Always read the matrix from the pgm file to use it.
     */
   unsigned char* ptr = (unsigned char*)calloc(k*k, sizeof(unsigned char)); // creates a k*k array of unsigned char
-
   // generate a random matrix of 0 and 255
+  unsigned int seed = clock();
+
   for (int i = 0; i < k*k; i++) {
-    unsigned char rand_num = (unsigned char) rand() % 2;
+    unsigned char rand_num = (unsigned char) rand_r(&seed) % 2;
     if(rand_num==1){
       ptr[i] = 255;
     }else{
