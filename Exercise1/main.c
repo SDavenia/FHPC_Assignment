@@ -110,11 +110,11 @@ int main ( int argc, char **argv )
       printf("argument -%c not known\n", c ); break;
     }
   }
+
   if(action == INIT){
     // create initial conditions
     printf("Initialize\n");
     random_playground(k,fname);
-  
   }else{ 
     // Read and run a playground
     printf("Run\n");
@@ -124,12 +124,11 @@ int main ( int argc, char **argv )
     unsigned char* input;
     read_pgm_image(&input, &maxval, &xsize, &ysize, fname);
 
-
-    printf("READING THE INITIAL ONE\n");
     //print_image(input, k);
-
     printf("INITALIZING THE FRAME\n");
-    unsigned char* current = (unsigned char*)calloc((k+2)*(k+2), sizeof(unsigned char));
+    unsigned char* current = (unsigned char*)malloc((k+2)*(k+2)*sizeof(unsigned char));
+    printf("Allocated memory for current using malloc\n");
+
     double Tstart_init = CPU_TIME;
     initialize_current(input, current, k);
     double Time_init = CPU_TIME - Tstart_init;
@@ -147,7 +146,10 @@ int main ( int argc, char **argv )
     }else{ // Static
         printf("STATIC EXECUTION\n");
         unsigned char* next = (unsigned char*)malloc((k+2)*(k+2)*sizeof(unsigned char));
+        printf("Allocated memory for next using malloc\n");
+
         evolve_static(current, next, k, n);
+        printf("Finished static evolution");
         free(next);
     }
     double Time_exec = CPU_TIME - Tstart_exec;
@@ -329,9 +331,13 @@ void initialize_current(unsigned char* input, unsigned char* current, int k){
 
 void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps){
   for (int n = 0; n < n_steps; n++){
+    printf("%d-th update\n", n);
 
     // Start by updating the internal values
     for(int i = 1; i < k+1; i++){
+      if(i % 1000 == 0)
+        printf("I am doint i = %d\n", i);
+
       next[(k+2)*(i+1) - 1] = next[(i)*(k+2) + 1];
       for(int j = 1; j < k+1; j++){
           int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
@@ -345,7 +351,10 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
               next[i*(k+2) + j] = 255; // Alive
       }
       next[(k+2)*i] = next[(k+2)*(i+1) - 2]; // First column of the border
+      if(i % 1000 == 0)
+        printf("I have finished i = %d\n", i);
     }
+    printf("Now we only have to update the frame\n");
     // Now update the frame accordingly
     // First row
     next[0] = next[(k+1)*(k+2)-2];          // Top left corner
@@ -374,8 +383,7 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
     // printf("PRINTING CURRENT\n");
     printf("Result after iteration %d:\n", n+1);
     //print_image(current, k+2);
-  }
-    
+  }  
 }
 
 void evolve_dynamic(unsigned char* current, int k, int n_steps){
