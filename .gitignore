@@ -39,6 +39,7 @@
 ehthumbs.db
 Thumbs.db
 Basic/.DS_Store
+.vscode/
 
 # For now images #
 ##################
