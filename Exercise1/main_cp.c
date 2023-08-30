@@ -352,22 +352,22 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
 
         // Now update the frame accordingly
         // First row
-        for(int i = 1; i < k+2; i++){
+        for(int i = 1; i < k+1; i++){
             next[i] = next[(k)*(k+2) + i]; // row k is the last inner row
         }
 
         // Last row
-        for(int i = 1; i < k+2; i++){
+        for(int i = 1; i < k+1; i++){
             next[(k+1)*(k+2) + i] = next[(k+2) + i];
         }
 
         // First column
-        for(int i = 1; i < k+2; i++){
+        for(int i = 1; i < k+1; i++){
             next[(k+2)*i] = next[(k+2)*(i+1) - 2];
         }
 
         // Last column
-        for(int i = 1; i < k+2; i++){
+        for(int i = 1; i < k+1; i++){
             next[(k+2)*(i+1) - 1] = next[(i)*(k+2) + 1];
         } 
 
@@ -375,7 +375,7 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
         next[0] = next[(k+1)*(k+2)-2];          // Top left corner
         next[(k+2)-1] = next[(k)*(k+2)+1];      // Top right corner
         next[(k+1)*(k+2)] = next[2*(k+2)-2];    // Bottom left corner
-        next[(k*2)*(k*2)-1] = next[(k+2)+1];    // Bottom right corner
+        next[(k+2)*(k+2)-1] = next[(k+2)+1];    // Bottom right corner
 
 
         // Swap the pointers so that you have the right one

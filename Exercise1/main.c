@@ -305,7 +305,7 @@ void initialize_current(unsigned char* input, unsigned char* current, int k){
   for (int i = 0; i < k; i++){
     current[i+1] = input[(k-1)*k + i];
   }
-  current[(k+2) - 1] = input[k*(k-1)]; // Top right of current
+  current[(k+2) - 1] = input[(k-1)*k]; // Top right of current
 
 
   // Initialize the inner values
@@ -331,44 +331,38 @@ void initialize_current(unsigned char* input, unsigned char* current, int k){
 
 void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps){
   for (int n = 0; n < n_steps; n++){
-    printf("%d-th update\n", n);
 
     // Start by updating the internal values
     for(int i = 1; i < k+1; i++){
-      if(i % 1000 == 0)
-        printf("I am doint i = %d\n", i);
 
-      next[(k+2)*(i+1) - 1] = next[(i)*(k+2) + 1];
-      for(int j = 1; j < k+1; j++){
-          int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                              current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                              current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-          //alive_neighbours /= 255;
-          //printf("I am (%d, %d) and I have %d\n", i, j,  alive_neighbours);
-          if (alive_neighbours > 765 || alive_neighbours < 510)
-              next[i*(k+2) + j] = 0; // Dead
-          else
-              next[i*(k+2) + j] = 255; // Alive
+      for(int j = 2; j < k+1; j++){
+        int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
+                            current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
+                            current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
+
+        if (alive_neighbours > 765 || alive_neighbours < 510)
+          next[i*(k+2) + j] = 0; // Dead
+        else
+          next[i*(k+2) + j] = 255; // Alive
       }
+      next[(k+2)*(i+1) - 1] = next[(i)*(k+2) + 1]; // Last column of the border
       next[(k+2)*i] = next[(k+2)*(i+1) - 2]; // First column of the border
-      if(i % 1000 == 0)
-        printf("I have finished i = %d\n", i);
     }
-    printf("Now we only have to update the frame\n");
+
     // Now update the frame accordingly
     // First row
     next[0] = next[(k+1)*(k+2)-2];          // Top left corner
-    for(int i = 1; i < k+2; i++){
-      next[i] = next[(k)*(k+2) + i]; // row k is the last inner row
+    for(int i = 1; i < k+1; i++){
+      next[i] = next[k*(k+2) + i]; // row k is the last inner row
     }
     next[(k+2)-1] = next[(k)*(k+2)+1];      // Top right corner
 
     // Last row
     next[(k+1)*(k+2)] = next[2*(k+2)-2];    // Bottom left corner
-    for(int i = 1; i < k+2; i++){
+    for(int i = 1; i < k+1; i++){
       next[(k+1)*(k+2) + i] = next[(k+2) + i];
     }
-    next[(k*2)*(k*2)-1] = next[(k+2)+1];    // Bottom right corner
+    next[(k+2)*(k+2)-1] = next[(k+2)+1];    // Bottom right corner
 
     printf("I have done the minor for loops as well");
     // Swap the pointers so that you have the right one
@@ -403,19 +397,18 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
                                         current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
                                         current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
         
-        alive_neighbours /= 255;
-        if (alive_neighbours > 3 || alive_neighbours < 2){
+        if (alive_neighbours > 765 || alive_neighbours < 510){
             current[i*(k+2) + j] = 0; // Dead
             current[(k+1)*(k+2)+j] = 0; // Update last row as well
-            current[2*(k+2)-1] = 0; // Update last column as well
+            current[(i+1)*(k+2)-1] = 0; // Update last column as well
         }else{
             current[i*(k+2) + j] = 255; // Alive
             current[(k+1)*(k+2)+j] = 255; // Update last row as well
-            current[2*(k+2)-1] = 255; // Update last column as well
+            current[(i+2)*(k+2)-1] = 255; // Update last column as well
         }
         }
 
-        // Now all other entries
+        // Now all other entries in the first row.
         for(int j = 2; j < k+1; j++){
             int i = 1;
 
@@ -423,8 +416,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
                                         current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
                                         current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
             
-            alive_neighbours /= 255;
-            if (alive_neighbours > 3 || alive_neighbours < 2){
+            if (alive_neighbours > 765 || alive_neighbours < 510){
                 current[i*(k+2) + j] = 0; // Dead
                 current[(k+1)*(k+2)+j] = 0; // Update last row as well
             }else{
@@ -450,8 +442,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
             int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
                                         current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
                                         current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-            alive_neighbours /= 255;
-            if (alive_neighbours > 3 || alive_neighbours < 2){
+            if (alive_neighbours > 765 || alive_neighbours < 510){
                 current[i*(k+2) + j] = 0;
                 current[(i+1)*(k+2) - 1] = 0;  // Update last column as well
             }else{
@@ -459,23 +450,23 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
                 current[(i+1)*(k+2) - 1] = 255; // Update last column as well
             }                 
             }
+
             for (int j = 2; j < k; j++){
                 int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
                                         current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
                                         current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-                alive_neighbours /= 255;
-                if (alive_neighbours > 3 || alive_neighbours < 2)
+                if (alive_neighbours > 765 || alive_neighbours < 510)
                     current[i*(k+2) + j] = 0;
                 else
                     current[i*(k+2) + j] = 255; // Alive  
             }
+
             // Finally last inner entry so we update last first column as well
             {int j = k;
             int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
                                         current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
                                         current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-            alive_neighbours /= 255;
-            if (alive_neighbours > 3 || alive_neighbours < 2){
+            if (alive_neighbours > 765 || alive_neighbours < 510){
                 current[i*(k+2) + j] = 0;
                 current[i*(k+2)] = 0;  // Update first column as well
             }else{
@@ -494,8 +485,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
                                         current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
                                         current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
         
-        alive_neighbours /= 255;
-        if (alive_neighbours > 3 || alive_neighbours < 2){
+        if (alive_neighbours > 765 || alive_neighbours < 510){
             current[i*(k+2) + j] = 0;
             current[j] = 0;  // Update first row as well
             current[(k+1)*(k+2)-1] = 0;// Update last column as well
@@ -512,8 +502,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
             int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
                                         current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
                                         current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-            alive_neighbours /= 255;
-            if (alive_neighbours > 3 || alive_neighbours < 2){
+            if (alive_neighbours > 765 || alive_neighbours < 510){
                 current[i*(k+2) + j] = 0;
                 current[j] = 0;  // Update first row as well
             }else{
@@ -521,7 +510,7 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
                 current[j] = 255; // Update first row as well
             }  
         }
-        // You can now update the first row entry 
+        // You can now update the first column entry 
         current[(k)*(k+2)] = current[(k+1)*(k+2)-2];
         
         // Now that they are correct, update the top corners using the values you just calculated 
