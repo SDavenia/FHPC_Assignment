@@ -400,11 +400,11 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
         if (alive_neighbours > 765 || alive_neighbours < 510){
             current[i*(k+2) + j] = 0; // Dead
             current[(k+1)*(k+2)+j] = 0; // Update last row as well
-            current[(i+1)*(k+2)-1] = 0; // Update last column as well
+            current[2*(k+2)-1] = 0; // Update last column as well
         }else{
             current[i*(k+2) + j] = 255; // Alive
             current[(k+1)*(k+2)+j] = 255; // Update last row as well
-            current[(i+2)*(k+2)-1] = 255; // Update last column as well
+            current[2*(k+2)-1] = 255; // Update last column as well
         }
         }
 
