@@ -332,16 +332,24 @@ void initialize_current(unsigned char* input, unsigned char* current, int k){
 
 void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps){
   for (int n = 0; n < n_steps; n++){
+    printf("current is at %p\n", current);
+    printf("next is at %p\n", next);
+    printf("At new iteration Current is:\n");
+    print_image(current, k+2);
+    printf("At new iteration next is:\n");
+    print_image(next, k+2);
+
 
     // Start by updating the internal values
     for(int i = 1; i < k+1; i++){
 
-      for(int j = 2; j < k+1; j++){
+      for(int j = 1; j < k+1; j++){
         int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
                             current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
                             current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
 
-        if (alive_neighbours > 765 || alive_neighbours < 510)
+        printf("Number of alive neighbours is %d \n", alive_neighbours);
+	if (alive_neighbours > 765 || alive_neighbours < 510)
           next[i*(k+2) + j] = 0; // Dead
         else
           next[i*(k+2) + j] = 255; // Alive
@@ -365,22 +373,22 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
     }
     next[(k+2)*(k+2)-1] = next[(k+2)+1];    // Bottom right corner
 
-    printf("I have done the minor for loops as well");
+    //printf("I have done the minor for loops as well");
     // Swap the pointers so that you have the right one
     unsigned char* tmp;
     printf("TEMPORARY POINTER DECLARED");
-    // printf("next is at %p\n", next);
-    // printf("current is at %p\n", current);
+    printf("next is at %p\n", next);
+    printf("current is at %p\n", current);
     tmp = next;
     printf("tmp = next");
     next = current;
     printf("next = current");
     current = tmp;
     printf("current = tmp");
-    // printf("next is at %p\n", next);
-    // printf("current is at %p\n", current);
+    printf("next is at %p\n", next);
+    printf("current is at %p\n", current);
 
-    // printf("PRINTING CURRENT\n");
+    printf("PRINTING CURRENT\n");
     printf("Result after iteration %d:\n", n+1);
     print_image(current, k+2);
   }  
