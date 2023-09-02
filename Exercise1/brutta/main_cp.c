@@ -1,7 +1,7 @@
 // To compile: gcc main.c -o main.exe
 // To run executable to generate playground: ./main.exe -i -k 5 -f init.pgm
 // To run execubtable to play on playground: ./main.exe -r -k 5 -f init.pgm -n 3
-// ORIGINAL MAIN
+// ORIGINAL MAIN (without optimization of functions)
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -125,7 +125,7 @@ int main ( int argc, char **argv )
 
 
     printf("READING THE INITIAL ONE\n");
-    print_image(input, k);
+    //print_image(input, k);
 
     printf("INITALIZING THE FRAME\n");
     unsigned char* current = (unsigned char*)calloc((k+2)*(k+2), sizeof(unsigned char)); 
@@ -390,7 +390,7 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
 
         // printf("PRINTING CURRENT\n");
         printf("Result after iteration %d:\n", n+1);
-        print_image(current, k+2);
+        //print_image(current, k+2);
     }
     
 }
@@ -534,6 +534,6 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
         current[(k+2)-1] = current[(k*(k+2))+1]; // Top right corner
 
         printf("Result after %d steps:\n", n+1);
-        print_image(current, k+2);
+        //print_image(current, k+2);
     }
 }
