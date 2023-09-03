@@ -8,8 +8,11 @@
 #include <string.h>
 #include <getopt.h>
 #include <time.h>
-#include <mpi.h>
+//#include <mpi.h>
 #include <omp.h>
+#ifndef _OPENMP
+#error "openmp support is required to compile this code"
+#endif
 
 
 void initialize_current(unsigned char* input, unsigned char* current, int k);
@@ -54,12 +57,14 @@ void random_playground(int k, char *fname){
   // generate a random matrix of 0 and 255
   unsigned int seed = clock();
 
+  #pragma omp for
   for (int i = 0; i < k*k; i++) {
     unsigned char rand_num = (unsigned char) rand_r(&seed) % 2;
     ptr[i] = rand_num==1 ? 255 : 0;
   }
   //write_pgm_image(ptr, 255, k, k,fname);
   }
+  print_image(ptr, k);
   free(ptr);
 }
 
