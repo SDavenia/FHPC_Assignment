@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
+#include <mpi.h>
 #include <time.h>
 
-#define CPU_TIME (clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ), (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9)
+// #define CPU_TIME (clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ), (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9)
 // To compile on mac /usr/local/bin/gcc-12 -fopenmp 
 
 /*
@@ -16,28 +17,40 @@
 */
 
 void shared_random_playground(unsigned char* ptr, int k);
+void mpi_random_playground(unsigned char* ptr, int k);
 
 int main(int argc, char* argv[])
 {
-    int k;
+    int k; // Matrix size
     if (argc > 1)
         k = atoi(argv[1]);
     else
         k = 5;
 
+    int rank, size;
+    MPI_Init( &argc, &argv );
+    MPI_Comm_rank( MPI_COMM_WORLD,&rank );
+    MPI_Comm_size( MPI_COMM_WORLD,&size );  
+
+    // Defines how many rows each process has to initialise
+    int rows_initialize = k / p 
+    if (rank < k%p) // For remainder 
+        rows_initialize += 1;
+
+    printf( "I am %d of %d and I have to generate %d rows\n", rank, size, rows_initialize);
+
     printf("Initialising matrix of size %d\n", k);
-    unsigned char* ptr = (unsigned char*)calloc(k*k, sizeof(unsigned char)); // Allocate memory which will be used by all
+    unsigned char* ptr = (unsigned char*)calloc(rows_initialize*rows_initialize, sizeof(unsigned char)); // Allocate memory for the rows you have to generate.
     
     double Tstart_init = omp_get_wtime();
-    shared_random_playground(ptr, k);
+    // shared_random_playground(ptr, k);
+    
     double Time_init = omp_get_wtime() - Tstart_init;
     printf("Generating random matrix took %lf s\n", Time_init);
     
 }
 
 void shared_random_playground(unsigned char* ptr, int k){
-    struct timespec ts;
-    
     #pragma omp parallel
     {
         int my_id = omp_get_thread_num();
@@ -53,4 +66,3 @@ void shared_random_playground(unsigned char* ptr, int k){
 
     }
 }
-
