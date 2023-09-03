@@ -16,6 +16,9 @@
  In this case the seed is initialised to the time, and then to ensure it is different among threads, each one of them is added its thread it.
 */
 
+void shared_random_playground(unsigned char* ptr, int k);
+void mpi_random_playground(unsigned char* ptr, int k);
+
 int main(int argc, char* argv[])
 {
     int k; // Matrix size
@@ -40,24 +43,27 @@ int main(int argc, char* argv[])
     unsigned char* ptr = (unsigned char*)calloc(rows_initialize*rows_initialize, sizeof(unsigned char)); // Allocate memory for the rows you have to generate.
     
     double Tstart_init = omp_get_wtime();
+    shared_random_playground(ptr, k);
+    
+    double Time_init = omp_get_wtime() - Tstart_init;
+    //printf("Generating random matrix took %lf s\n", Time_init);
+    
+}
+
+void shared_random_playground(unsigned char* ptr, int k){
     #pragma omp parallel
     {
         int my_id = omp_get_thread_num();
         unsigned int seed = clock();
         seed += my_id;
-        printf("I am thread %d of process %d\n", my_id, rank);
+	printf("I am thread %d of process %d\n", my_id, rank);
 
         #pragma omp for
-        for (int i = 0; i < rows_initialize*rows_initialize; i++){
+        for (int i = 0; i < k*k; i++){
             unsigned char random_num = (unsigned char) rand_r(&seed) % 2;
             //printf("random_num is %d\n", random_num);
             ptr[i] = random_num==1 ? 255 : 0;
-        }
+        }  
 
     }
-    
-    double Time_init = omp_get_wtime() - Tstart_init;
-    printf("I am %d and generating random matrix took %lf s\n",rank, Time_init);
-    
 }
-
