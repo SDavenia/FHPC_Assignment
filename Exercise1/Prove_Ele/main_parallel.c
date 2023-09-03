@@ -52,7 +52,8 @@ void random_playground(int k, char *fname){
   #pragma omp parallel
   {
   int me = omp_get_thread_num();
-  printf("Thread (pid: %d, tid: %ld) nr %d:\n", syscall(SYS_gettid), me); // process ID, Thread ID, number of thread inside the process
+  //printf("Thread (pid: %d, tid: %ld) nr %d:\n", syscall(SYS_gettid), me); // process ID, Thread ID, number of thread inside the process
+  printf("Thread nr %d\n", me);
 
   // generate a random matrix of 0 and 255
   unsigned int seed = clock();
@@ -113,6 +114,7 @@ int main ( int argc, char **argv )
       printf("argument -%c not known\n", c ); break;
     }
   }
+  random_playground(k,fname);
 
   if(action == INIT){
     // create initial conditions
