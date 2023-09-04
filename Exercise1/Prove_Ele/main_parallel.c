@@ -8,7 +8,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <time.h>
-//#include <mpi.h>
+#include <mpi.h>
 #include <omp.h>
 #ifndef _OPENMP
 #error "openmp support is required to compile this code"
@@ -45,42 +45,51 @@ void print_image(unsigned char* ptr, int ncol){
     }
 }
 
-void random_playground(int k, char *fname){
-   
-  unsigned char* ptr = (unsigned char*)calloc(k*k, sizeof(unsigned char)); // creates a k*k array of unsigned char
-  
+void random_playground(int k, char *fname){    
+  int rank, size;
+  MPI_Status status;
+  MPI_Request request;
+  // master process
+  int master = 0;
+  int tag = 123;
+
+  MPI_Init(&argc,&argv);
+  MPI_Comm_size(MPI_COMM_WORLD,&size);
+  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
   #pragma omp parallel
   {
-  int me = omp_get_thread_num();
+  int thread_num = omp_get_thread_num();
   //printf("Thread (pid: %d, tid: %ld) nr %d:\n", syscall(SYS_gettid), me); // process ID, Thread ID, number of thread inside the process
-  printf("Thread nr %d\n", me);
+  //printf("Thread nr %d\n", thread_num);
+  printf("Thread nr %d of process %d (out of %d processes)\n", thread_num, rank, size);
+
+  int k_proc = k/size;
+  printf("Process %d and I am initializing %d rows\n", rank,k_proc);
+  unsigned char* ptr = (unsigned char*)calloc(k_proc*k_proc, sizeof(unsigned char)); // creates a k*k array of unsigned char
 
   // generate a random matrix of 0 and 255
   unsigned int seed = clock();
 
   #pragma omp for
-  for (int i = 0; i < k*k; i++) {
+  for (int i = 0; i < k_proc*k_proc; i++) {
     unsigned char rand_num = (unsigned char) rand_r(&seed) % 2;
     ptr[i] = rand_num==1 ? 255 : 0;
   }
   //write_pgm_image(ptr, 255, k, k,fname);
   }
-  print_image(ptr, k);
+  print_image(ptr, k_proc);
   free(ptr);
+  MPI_Finalize();
 }
 
 int main ( int argc, char **argv )
 {
   struct timespec ts;
   int action = 0;
-  char *optstring = "irk:e:f:n:s:"; //optstring is a list of characters, each representing a single character option
+  char *optstring = "irk:e:f:n:s:";
 
   int c;
-  /*
-  Generally, the getopt() function is called from inside of a loop’s conditional statement.
-  The loop terminates when the getopt() function returns -1.
-  A switch statement is then executed with the value returned by getopt() function.
-  */
   while ((c = getopt(argc, argv, optstring)) != -1) {
     switch(c) {
       //c takes the current option (ex. k)
