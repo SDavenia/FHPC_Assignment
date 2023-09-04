@@ -1,3 +1,5 @@
+#define _GNU_SOURCE // sched_getcpu(3) is glibc-specific (see the man page)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -5,7 +7,6 @@
 #include <time.h>
 #include <sched.h> // Needed to find out which core each thread is running on
 
-#define _GNU_SOURCE // sched_getcpu(3) is glibc-specific (see the man page)
 
 // #define CPU_TIME (clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ), (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9)
 // To compile on mac /usr/local/bin/gcc-12 -fopenmp 
@@ -61,7 +62,10 @@ int main(int argc, char* argv[])
     }
     
     double Time_init = omp_get_wtime() - Tstart_init;
-    // printf("I am %d and generating random matrix took %lf s\n",rank, Time_init);
+    printf("I am %d and generating random matrix took %lf s\n",rank, Time_init);
+
+    free(ptr);
+    MPI_Finalize();
     
 }
 
