@@ -3,6 +3,9 @@
 #include <omp.h>
 #include <mpi.h>
 #include <time.h>
+#include <sched.h> // Needed to find out which core each thread is running on
+
+#define _GNU_SOURCE // sched_getcpu(3) is glibc-specific (see the man page)
 
 // #define CPU_TIME (clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ), (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9)
 // To compile on mac /usr/local/bin/gcc-12 -fopenmp 
@@ -35,7 +38,7 @@ int main(int argc, char* argv[])
     if (rank < k%size) // For remainder 
         rows_initialize += 1;
 
-    printf( "I am %d of %d and I have to generate %d rows\n", rank, size, rows_initialize);
+    // printf( "I am %d of %d and I have to generate %d rows\n", rank, size, rows_initialize);
 
     unsigned char* ptr = (unsigned char*)calloc(rows_initialize*rows_initialize, sizeof(unsigned char)); // Allocate memory for the rows you have to generate.
     
@@ -43,9 +46,10 @@ int main(int argc, char* argv[])
     #pragma omp parallel
     {
         int my_id = omp_get_thread_num();
+        int cpu_num = sched_getcpu(); // To see what core it is using
         unsigned int seed = clock();
         seed += my_id;
-        printf("I am thread %d of process %d\n", my_id, rank);
+        printf("I am thread %d of process %d and I am running on core %d\n", my_id, rank, cpu_num);
 
         #pragma omp for
         for (int i = 0; i < rows_initialize*rows_initialize; i++){
@@ -57,7 +61,7 @@ int main(int argc, char* argv[])
     }
     
     double Time_init = omp_get_wtime() - Tstart_init;
-    printf("I am %d and generating random matrix took %lf s\n",rank, Time_init);
+    // printf("I am %d and generating random matrix took %lf s\n",rank, Time_init);
     
 }
 
