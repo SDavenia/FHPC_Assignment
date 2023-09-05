@@ -189,16 +189,16 @@ void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize,
   size_t  k, n = 0;
   
   // get the Magic Number
-  k = fscanf(image_file, "%2s%*c", MagicN );
+  k = fscanf(image_file, "%2s%*c", MagicN ); // This one reads P5
 
   // skip all the comments
-  k = getline( &line, &n, image_file);
+  k = getline( &line, &n, image_file); // Here we read all the lines starting with #, i.e. all the comments.
   while ( (k > 0) && (line[0]=='#') )
     k = getline( &line, &n, image_file);
 
   if (k > 0)
     {
-      k = sscanf(line, "%d%*c%d%*c%d%*c", xsize, ysize, maxval);
+      k = sscanf(line, "%d%*c%d%*c%d%*c", xsize, ysize, maxval);  // This one reads the number
       if ( k < 3 )
 	fscanf(image_file, "%d%*c", maxval);
     }
