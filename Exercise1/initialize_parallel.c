@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
     double Time_init = omp_get_wtime() - Tstart_init;
     printf("I am %d and generating random matrix took %lf s\n",rank, Time_init);
 
-   /*
+   
     char fname2[] = "prova.txt";
   // Open a FILE* stream
     MPI_Barrier(MPI_COMM_WORLD);
@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
         fclose(prova_file);
     }
     printf("\n");
-   */
+   
 
     MPI_File_delete(fname, MPI_INFO_NULL);
     MPI_File_open(  MPI_COMM_WORLD, fname, 
