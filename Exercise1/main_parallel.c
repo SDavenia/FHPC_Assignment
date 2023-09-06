@@ -2,7 +2,13 @@
 // To compile: srun mpicc -fopenmp main_parallel.c -o main_parallel.exe
 // To run executable to generate playground: srun ./main_parallel.exe -i -k 5 -f init.pgm
 // To run execubtable to play on playground: srun ./main_parallel.exe -r -k 5 -f init.pgm -n 3
-// OPTIMIZED and with the errors fixed
+
+/*
+  double Tstart_init = omp_get_wtime();
+  double Time_init = omp_get_wtime() - Tstart_init;
+  printf("I am process %d and generating random matrix took %lf s\n",rank, Time_init);
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,15 +17,6 @@
 #include <mpi.h>
 #include <omp.h>
 
-
-void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name);
-void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name);
-
-void initialize_current(unsigned char* input, unsigned char* current, int k);
-void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps);
-void evolve_dynamic(unsigned char* current, int k, int n_steps);
-
-void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize);
 #define INIT 1
 #define RUN  2
 
@@ -37,212 +34,31 @@ int   n      = 10000;
 int   s      = 1;
 char *fname  = NULL;
 
-void print_image(unsigned char* ptr, int ncol){
-    for(int i = 0; i < ncol; i++){
-        for(int j = 0; j < ncol; j++){
-            printf("%d ", ptr[i*ncol + j]/255);
+void print_image(unsigned char* ptr, int k){
+  /*
+  This function is used only in intermediate steps to print to terminal a square matrix with k columns
+  */
+    for(int i = 0; i < k; i++){
+        for(int j = 0; j < k; j++){
+            printf("%d ", ptr[i*k + j]/255);
         }
         printf("\n");
     }
 }
 
-void initialize_parallel(int k, char *fname){
-  int rank, size;
-  MPI_Init( NULL, NULL );
-  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
-  MPI_Comm_size( MPI_COMM_WORLD,&size );  
-
-  // Defines how many rows each process has to initialise
-  int rows_initialize = k / size; 
-  if (rank < k%size) // For remainder 
-      rows_initialize += 1;
-
-  //char fname[] = "init.pgm";
-  MPI_File fh;
-  MPI_Offset disp;
-
-  // printf( "I am %d of %d and I have to generate %d rows\n", rank, size, rows_initialize);
-
-  unsigned char* ptr = (unsigned char*)calloc(rows_initialize*k, sizeof(unsigned char)); // Allocate memory for the rows you have to generate.
-  
-  double Tstart_init = omp_get_wtime();
-  #pragma omp parallel
-  {
-    int my_id = omp_get_thread_num();
-    //int cpu_num = sched_getcpu(); // To see what core it is using
-    unsigned int seed = clock();
-    seed += my_id;
-    // printf("I am thread %d of process %d and I am running on core %d\n", my_id, rank, cpu_num);
-
-    #pragma omp for
-    for (int i = 0; i < rows_initialize*k; i++){
-        unsigned char random_num = (unsigned char) rand_r(&seed) % 2;
-        //printf("random_num is %d\n", random_num);
-        ptr[i] = random_num==1 ? 255 : 0;
-    }
-
-  }
-  
-  double Time_init = omp_get_wtime() - Tstart_init;
-  printf("I am process %d and generating random matrix took %lf s\n",rank, Time_init);
-  
-  char fname2[] = "prova_write.txt";
-  // Open a FILE* stream
-  MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 0){
-      FILE* prova_file = fopen(fname2, "w");
-      fprintf(prova_file,"I am process %d\n", rank);
-      for(int i =0; i<k*rows_initialize;i++){
-          fprintf(prova_file,"%u ", ptr[i]);
-      }
-      fclose(prova_file);
-  }
-  printf("\n");
-
-  MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 1){
-      FILE* prova_file = fopen(fname2, "a");
-      fprintf(prova_file,"\nI am process %d\n", rank);
-      for(int i =0; i<k*rows_initialize;i++){
-          fprintf(prova_file,"%u ", ptr[i]);
-      }
-      fclose(prova_file);
-  }
-  printf("\n");
-  MPI_Barrier(MPI_COMM_WORLD);
-  if(rank == 2){
-      FILE* prova_file = fopen(fname2, "a");
-      fprintf(prova_file,"\nI am process %d\n", rank);
-      for(int i =0; i<k*rows_initialize;i++){
-          fprintf(prova_file,"%u ", ptr[i]);
-      }
-      fclose(prova_file);
-  }
-  printf("\n");
-
-  write_pgm_parallel(ptr, 255, k, k, fname, rank, size, rows_initialize);
-
-  free(ptr);
-  MPI_Finalize();
-}
-
-void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize){
-  
-  MPI_File fh;
-  MPI_Offset disp;
-
-  MPI_File_delete(fname, MPI_INFO_NULL);
-  MPI_File_open(  MPI_COMM_WORLD, fname, 
-                MPI_MODE_CREATE | MPI_MODE_RDWR, 
-                MPI_INFO_NULL, &fh  );
-  MPI_File_close(&fh);
-
-  if (rank == 0) {
-        FILE* file_stream = fopen(fname, "w");  // Open a FILE* stream
-        /*int xsize, ysize, maxval;
-        xsize = k;
-        ysize = k;
-        maxval = 255;*/
-
-        if (file_stream != NULL) {
-            int max_value = size - 1;
-            fprintf(file_stream, "P5\n# generated by\n# Elena Rivaroli and Samuele D'Avenia\n%d %d\n%d\n", xsize, ysize, maxval);
-            fclose(file_stream);
-        } else {
-            fprintf(stderr, "Failed to open the PGM file for writing.\n");
-            MPI_Abort(MPI_COMM_WORLD, 1);
-        }
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_File_open(MPI_COMM_WORLD, fname, 
-                MPI_MODE_APPEND | MPI_MODE_RDWR, 
-                MPI_INFO_NULL, &fh  );
-  
-  if (rank >= k % size){
-    disp = (rank * rows_initialize +k%size)* k *sizeof(unsigned char);
-  }else{
-    disp = rank * rows_initialize * k *sizeof(unsigned char);
-  }
-  
-  MPI_File_seek(fh, disp, MPI_SEEK_CUR);
-  MPI_File_write_all(fh, ptr, rows_initialize*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
-
-  MPI_File_close(&fh);
-}
-
-void read_pgm_parallel( unsigned char *ptr, int k, const char *image_name){
-  int rank, size;
-  MPI_Init( NULL, NULL );
-  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
-  MPI_Comm_size( MPI_COMM_WORLD,&size );
-
-  // Defines how many rows each process has to initialise
-  int rows_read = k / size; 
-  if (rank < k%size) // For remainder 
-      rows_read += 1;
-
-  ptr = (unsigned char*)calloc(rows_read*k, sizeof(unsigned char));
-
-  MPI_Offset disp;
-  MPI_File   fh;
-  MPI_File_open(  MPI_COMM_WORLD, image_name, 
-                  MPI_MODE_RDONLY,
-                  MPI_INFO_NULL, &fh  );
-  
-  if (rank >= k % size)
-      rows_read += k % size;
-
-  disp = rank * rows_read * k *sizeof(unsigned char) + 64; // 64 in this case is the hardcoded representation of the header of the images
-
-  MPI_File_seek(fh, disp, MPI_SEEK_CUR);
-  MPI_File_read_all(fh, ptr, rows_read*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
-
-  MPI_File_close(&fh);
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  FILE* prova_file;
-  char nome_file[] = "prova_read.txt";
-  prova_file = fopen(nome_file, "w");
-  if(rank==0){
-      fprintf(prova_file,"I am process %d\n", rank);
-      for(int i = 0; i < 3*5; i++)
-          fprintf(prova_file, "%u ",ptr[i]);
-  }
-  printf("\n");
-  MPI_Barrier(MPI_COMM_WORLD);
-  fclose(prova_file);
-  prova_file = fopen(nome_file, "a");
-  if(rank==1){
-      fprintf(prova_file,"I am process %d\n", rank);
-      for(int i = 0; i < 2*5; i++)
-          fprintf(prova_file, "%u ",ptr[i]);
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-  fclose(prova_file);
-  prova_file = fopen(nome_file, "a");
-  if(rank==2){
-      fprintf(prova_file,"I am process %d\n", rank);
-      for(int i = 0; i < 2*5; i++)
-          fprintf(prova_file, "%u ",ptr[i]);
-  }
-  fclose(prova_file);
-
-  MPI_Finalize();
-  
-}
+// Here we report the functions which are used to generate the image, write to a pgm file, and read from a pgm file respectively
+void initialize_parallel(int k, char *fname);
+void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize);
+void read_pgm_parallel( unsigned char *ptr, int k, const char *image_name);
 
 int main ( int argc, char **argv )
 {
+  // 1- Read the command line arguments
   struct timespec ts;
   int action = 0;
   char *optstring = "irk:e:f:n:s:"; //optstring is a list of characters, each representing a single character option
 
   int c;
-  /*
-  Generally, the getopt() function is called from inside of a loop’s conditional statement.
-  The loop terminates when the getopt() function returns -1.
-  A switch statement is then executed with the value returned by getopt() function.
-  */
   while ((c = getopt(argc, argv, optstring)) != -1) {
     switch(c) {
       //c takes the current option (ex. k)
@@ -277,6 +93,7 @@ int main ( int argc, char **argv )
     }
   }
 
+  // 2- Depending on whether initialisation or execution is required, perform it.
   if(action == INIT){
     // create initial conditions
     printf("Initialize\n");
@@ -286,12 +103,7 @@ int main ( int argc, char **argv )
     printf("Run\n");
     unsigned char* input;
     read_pgm_parallel(input, k, fname);
-    /*int xsize;
-    int ysize;
-    int maxval;
-    unsigned char* input;
-    read_pgm_image(&input, &maxval, &xsize, &ysize, fname);
- 
+    /*
     printf("Initial image\n");
     print_image(input, k);
     printf("INITALIZING THE FRAME\n");
@@ -331,372 +143,215 @@ int main ( int argc, char **argv )
 
 
 
-void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name)
-/*
- * image        : a pointer to the pointer that will contain the image
- * maxval       : a pointer to the int that will store the maximum intensity in the image
- * xsize, ysize : pointers to the x and y sizes
- * image_name   : the name of the file to be read
- *
- */
-/*
-"image" is a pointer to a pointer so:
-- with *image I access the address of the first element of the string (image)
-- with **image I access the value of the first element of the string (image)
-*/
-{
-  FILE* image_file; 
-  image_file = fopen(image_name, "r");
-
-  *image = NULL; //address of the first element of image
-  *xsize = *ysize = *maxval = 0; // set to 0 the value of xsize, ysize and maxval
-  
-  char    MagicN[2]; // define a string of 2 elements
-  char   *line = NULL; //define a pointer "line" to NULL
-  size_t  k, n = 0;
-  
-  // get the Magic Number
-  k = fscanf(image_file, "%2s%*c", MagicN ); // This one reads P5
-
-  // skip all the comments
-  k = getline( &line, &n, image_file); // Here we read all the lines starting with #, i.e. all the comments.
-  while ( (k > 0) && (line[0]=='#') )
-    k = getline( &line, &n, image_file);
-
-  if (k > 0)
-    {
-      k = sscanf(line, "%d%*c%d%*c%d%*c", xsize, ysize, maxval);  // This one reads the number
-      if ( k < 3 )
-	fscanf(image_file, "%d%*c", maxval);
-    }
-  else
-    {
-      *maxval = -1;         // this is the signal that there was an I/O error
-			    // while reading the image header
-      free( line );
-      return;
-    }
-  free( line );
-  
-  int color_depth = 1 + ( *maxval > 255 );
-  unsigned int size = *xsize * *ysize * color_depth;
-  
-  if ( (*image = (unsigned char*)malloc( size )) == NULL )
-    {
-      fclose(image_file);
-      *maxval = -2;         // this is the signal that memory was insufficient
-      *xsize  = 0;
-      *ysize  = 0;
-      return;
-    }
-  
-  if ( fread( *image, 1, size, image_file) != size )
-    {
-      free( image );
-      image   = NULL;
-      *maxval = -3;         // this is the signal that there was an i/o error
-      *xsize  = 0;
-      *ysize  = 0;
-    }  
-/*
-  for (int u = 0; u < 9; u++) {
-    //printf("%u\t", (*image)[u]);
-    printf("%u\t", *(*image+u));
-  }
-*/
-  printf("\n");
-  
-  fclose(image_file);
-  return;
-}
-
-void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name)
-/*
- * image        : a pointer to the memory region that contains the image
- * maxval       : either 255 or 65536
- * xsize, ysize : x and y dimensions of the image
- * image_name   : the name of the file to be written
- *
- */
-{
-  FILE* image_file; 
-  image_file = fopen(image_name, "w"); 
-  
-  // Writing header
-  // The header's format is as follows, all in ASCII.
-  // "whitespace" is either a blank or a TAB or a CF or a LF
-  // - The Magic Number (see below the magic numbers)
-  // - the image's width
-  // - the height
-  // - a white space
-  // - the image's height
-  // - a whitespace
-  // - the maximum color value, which must be between 0 and 65535
-  //
-  // if he maximum color value is in the range [0-255], then
-  // a pixel will be expressed by a single byte; if the maximum is
-  // larger than 255, then 2 bytes will be needed for each pixel
-  //
-
-  int color_depth = 1 + ( maxval > 255 ); // 1+0 if maxval <= 255; 1+1 if maxval > 255
-
-  fprintf(image_file, "P5\n# generated by\n# Elena Rivaroli and Samuele D'Avenia\n%d %d\n%d\n", xsize, ysize, maxval);
-  
-  // Writing file
-  fwrite( image, 1, xsize*ysize*color_depth, image_file);
+void initialize_parallel(int k, char *fname){
   /*
-  size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
-    - ptr − This is the pointer to the array of elements to be written.
-    - size − This is the size in bytes of each element to be written.
-    - nmemb − This is the number of elements, each one with a size of size bytes.
-    - stream − This is the pointer to a FILE object that specifies an output stream.
-  */  
-
-  fclose(image_file); 
-  return ;
-
-  /* ---------------------------------------------------------------
-
-     TYPE    MAGIC NUM     EXTENSION   COLOR RANGE
-           ASCII  BINARY
-
-     PBM   P1     P4       .pbm        [0-1]
-     PGM   P2     P5       .pgm        [0-255]
-     PPM   P3     P6       .ppm        [0-2^16[
+  INPUT:
+    - k: the size of the square where we want to execute GOL.
+    - fname: the string containing the name of the pgm file where we want to store the image
   
-  ------------------------------------------------------------------ */
-}
+  1. It generates a random matrix of size k x k. 
+     Each MPI process is assigned a number of rows, and then OpenMP threads are used to randomly initialize different rows of the matrix
+  
+  2. It writes the random matrix to file called fname.
+  */
+  int rank, size;
+  MPI_Init( NULL, NULL );
+  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
+  MPI_Comm_size( MPI_COMM_WORLD,&size );  
 
-void initialize_current(unsigned char* input, unsigned char* current, int k){
+  // Defines how many rows each process has to initialise
+  int rows_initialize = k / size; 
+  if (rank < k%size) // For remainder 
+      rows_initialize += 1;
 
-  current[0] = input[k*k-1]; // Top left of current
-  // Last row of input -> First row of current
-  for (int i = 0; i < k; i++){
-    current[i+1] = input[(k-1)*k + i];
-  }
-  current[(k+2) - 1] = input[(k-1)*k]; // Top right of current
+  MPI_File fh;
+  MPI_Offset disp;
 
+  // printf( "I am %d of %d and I have to generate %d rows\n", rank, size, rows_initialize);
 
-  // Initialize the inner values
-  for(int i = 0; i < k; i++){
-    // First column of that row
-    current[(i+1)*(k+2)] = input[(i+1)*k - 1];
-    for(int j = 0; j < k; j++){
-      current[(i+1)*(k+2) + (j+1)] = input[i*k + j];
+  // Allocate the memory required for the rows of that processor.
+  unsigned char* ptr = (unsigned char*)calloc(rows_initialize*k, sizeof(unsigned char)); // Allocate memory for the rows you have to generate.
+  
+  // In this parallel region the different threads generate random numbers on different sections of the matrix.
+  #pragma omp parallel
+  {
+    int my_id = omp_get_thread_num();
+    //int cpu_num = sched_getcpu(); // To see what core it is using
+    unsigned int seed = clock();
+    seed += my_id;
+    // printf("I am thread %d of process %d and I am running on core %d\n", my_id, rank, cpu_num);
+
+    #pragma omp for
+    for (int i = 0; i < rows_initialize*k; i++){
+        unsigned char random_num = (unsigned char) rand_r(&seed) % 2;
+        //printf("random_num is %d\n", random_num);
+        ptr[i] = random_num==1 ? 255 : 0;
     }
-    // Last column of that row
-    current[(i+2)*(k+2)-1] = input[i*k];
+
   }
+  /* THIS SECTION HERE IS ONLY NEEDED FOR TESTING (HERE WE ONLY HAVE 3 PROCESSORS).
 
-  current[(k+1)*(k+2)] = input[k-1]; // Bottom left of current
-
-  // Initialize the corners and the frame rows and columns
-  // First row of input -> Last row of current
-  for (int i = 0; i < k; i++){
-    current[(k+1)*(k+2) + i + 1]=input[i];
-  }
-  current[(k+2)*(k+2)-1] = input[0]; // Bottom right of current
-}
-
-void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps){
-  for (int n = 0; n < n_steps; n++){
-    printf("current is at %p\n", current);
-    printf("next is at %p\n", next);
-    printf("At new iteration Current is:\n");
-    print_image(current, k+2);
-    printf("At new iteration next is:\n");
-    print_image(next, k+2);
-
-
-    // Start by updating the internal values
-    for(int i = 1; i < k+1; i++){
-
-      for(int j = 1; j < k+1; j++){
-        int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                            current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                            current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-
-        printf("Number of alive neighbours is %d \n", alive_neighbours);
-	if (alive_neighbours > 765 || alive_neighbours < 510)
-          next[i*(k+2) + j] = 0; // Dead
-        else
-          next[i*(k+2) + j] = 255; // Alive
+  char fname2[] = "prova_write.txt";
+  // Open a FILE* stream
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 0){
+      FILE* prova_file = fopen(fname2, "w");
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i =0; i<k*rows_initialize;i++){
+          fprintf(prova_file,"%u ", ptr[i]);
       }
-      next[(k+2)*(i+1) - 1] = next[(i)*(k+2) + 1]; // Last column of the border
-      next[(k+2)*i] = next[(k+2)*(i+1) - 2]; // First column of the border
-    }
+      fclose(prova_file);
+  }
+  printf("\n");
 
-    // Now update the frame accordingly
-    // First row
-    next[0] = next[(k+1)*(k+2)-2];          // Top left corner
-    for(int i = 1; i < k+1; i++){
-      next[i] = next[k*(k+2) + i]; // row k is the last inner row
-    }
-    next[(k+2)-1] = next[(k)*(k+2)+1];      // Top right corner
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 1){
+      FILE* prova_file = fopen(fname2, "a");
+      fprintf(prova_file,"\nI am process %d\n", rank);
+      for(int i =0; i<k*rows_initialize;i++){
+          fprintf(prova_file,"%u ", ptr[i]);
+      }
+      fclose(prova_file);
+  }
+  printf("\n");
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 2){
+      FILE* prova_file = fopen(fname2, "a");
+      fprintf(prova_file,"\nI am process %d\n", rank);
+      for(int i =0; i<k*rows_initialize;i++){
+          fprintf(prova_file,"%u ", ptr[i]);
+      }
+      fclose(prova_file);
+  }
+  printf("\n");
+  */
 
-    // Last row
-    next[(k+1)*(k+2)] = next[2*(k+2)-2];    // Bottom left corner
-    for(int i = 1; i < k+1; i++){
-      next[(k+1)*(k+2) + i] = next[(k+2) + i];
-    }
-    next[(k+2)*(k+2)-1] = next[(k+2)+1];    // Bottom right corner
+  // Write to file.
+  write_pgm_parallel(ptr, 255, k, k, fname, rank, size, rows_initialize);
 
-    //printf("I have done the minor for loops as well");
-    // Swap the pointers so that you have the right one
-    unsigned char* tmp;
-    printf("TEMPORARY POINTER DECLARED");
-    printf("next is at %p\n", next);
-    printf("current is at %p\n", current);
-    tmp = next;
-    printf("tmp = next");
-    next = current;
-    printf("next = current");
-    current = tmp;
-    printf("current = tmp");
-    printf("next is at %p\n", next);
-    printf("current is at %p\n", current);
-
-    printf("PRINTING CURRENT\n");
-    printf("Result after iteration %d:\n", n+1);
-    print_image(current, k+2);
-  }  
+  free(ptr);
+  MPI_Finalize();
 }
+void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize){
+  /*
+  INPUT:
+    - ptr: pointer to the memory location where the matrix is stored.
+    - maxval: 255
+    - xsize, ysize: size of the pgm image, in our case it is kxk
+    - fname: name of the file where the pgm image is stored.
+    - rank, size: MPI quantities
+    - rows_initialize: how many rows each MPI process should write
+  */
+  
+  MPI_File fh;
+  MPI_Offset disp;
 
-void evolve_dynamic(unsigned char* current, int k, int n_steps){
+  MPI_File_delete(fname, MPI_INFO_NULL);
+  MPI_File_open(  MPI_COMM_WORLD, fname, 
+                MPI_MODE_CREATE | MPI_MODE_RDWR, 
+                MPI_INFO_NULL, &fh  );
+  MPI_File_close(&fh);
 
-    for (int n = 0 ; n < n_steps; n++){
-        // Update first inner row and consequently update last row
+  // Write pgm header
+  if (rank == 0) {
+        FILE* file_stream = fopen(fname, "w");  // Open a FILE* stream
+        /*int xsize, ysize, maxval;
+        xsize = k;
+        ysize = k;
+        maxval = 255;*/
 
-        // First entry should also update last column
-        {int i = 1;
-        int j = 1;
-        int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                                        current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                                        current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-        
-        if (alive_neighbours > 765 || alive_neighbours < 510){
-            current[i*(k+2) + j] = 0; // Dead
-            current[(k+1)*(k+2)+j] = 0; // Update last row as well
-            current[2*(k+2)-1] = 0; // Update last column as well
-        }else{
-            current[i*(k+2) + j] = 255; // Alive
-            current[(k+1)*(k+2)+j] = 255; // Update last row as well
-            current[2*(k+2)-1] = 255; // Update last column as well
+        if (file_stream != NULL) {
+            int max_value = size - 1;
+            fprintf(file_stream, "P5\n# generated by\n# Elena Rivaroli and Samuele D'Avenia\n%d %d\n%d\n", xsize, ysize, maxval);
+            fclose(file_stream);
+        } else {
+            fprintf(stderr, "Failed to open the PGM file for writing.\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
         }
-        }
+  }
+  MPI_Barrier(MPI_COMM_WORLD); // Wait for the header to have finished writing.
+  // Open the file using MPI collective functions and write with each thread
+  MPI_File_open(MPI_COMM_WORLD, fname, 
+                MPI_MODE_APPEND | MPI_MODE_RDWR, 
+                MPI_INFO_NULL, &fh  );
+      
+  // Decide where on file each MPI process should write.
+  if (rank >= k % size){
+    disp = (rank * rows_initialize +k%size)* k *sizeof(unsigned char);
+  }else{
+    disp = rank * rows_initialize * k *sizeof(unsigned char);
+  }
+  
+  MPI_File_seek(fh, disp, MPI_SEEK_CUR);
+  MPI_File_write_all(fh, ptr, rows_initialize*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
 
-        // Now all other entries in the first row.
-        for(int j = 2; j < k+1; j++){
-            int i = 1;
-
-            int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                                        current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                                        current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-            
-            if (alive_neighbours > 765 || alive_neighbours < 510){
-                current[i*(k+2) + j] = 0; // Dead
-                current[(k+1)*(k+2)+j] = 0; // Update last row as well
-            }else{
-                current[i*(k+2) + j] = 255; // Alive
-                current[(k+1)*(k+2)+j] = 255; // Update last row as well
-            }
-        }
-        // You can now also update the first row entry (not needed to be done before since not used immediately)
-        current[(k+2)] = current[2*(k+2)-2];
-
-        // Now that they are correct, update the bottom corners using the values you just calculated 
-        // No need to update them before since they are only needed later
-        current[(k+1)*(k+2)] = current[(k+2)*2 - 2];   // Bottom left corner
-        current[(k+2)*(k+2)-1] = current[(k+2) + 1]; // Bottom right corner
-        
-
-        // Update all the other rows (from second to penultimate), keep in mind that whenever first or last value of the row get updated, 
-        //  they should also be propagated to last and first column respectively
-        for(int i = 2; i < k; i++){
-            
-            // First inner entry so we update last column
-            {int j = 1;
-            int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                                        current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                                        current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-            if (alive_neighbours > 765 || alive_neighbours < 510){
-                current[i*(k+2) + j] = 0;
-                current[(i+1)*(k+2) - 1] = 0;  // Update last column as well
-            }else{
-                current[i*(k+2) + j] = 255; // Alive
-                current[(i+1)*(k+2) - 1] = 255; // Update last column as well
-            }                 
-            }
-
-            for (int j = 2; j < k; j++){
-                int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                                        current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                                        current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-                if (alive_neighbours > 765 || alive_neighbours < 510)
-                    current[i*(k+2) + j] = 0;
-                else
-                    current[i*(k+2) + j] = 255; // Alive  
-            }
-
-            // Finally last inner entry so we update last first column as well
-            {int j = k;
-            int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                                        current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                                        current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-            if (alive_neighbours > 765 || alive_neighbours < 510){
-                current[i*(k+2) + j] = 0;
-                current[i*(k+2)] = 0;  // Update first column as well
-            }else{
-                current[i*(k+2) + j] = 255; // Alive
-                current[i*(k+2)] = 255; // Update first column as well
-            }  
-            }
-        }
-
-        
-        // Update last inner row and consequently update first row
-        // First entry should also update last column
-        {int i = k;
-        int j = 1;
-        int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                                        current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                                        current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-        
-        if (alive_neighbours > 765 || alive_neighbours < 510){
-            current[i*(k+2) + j] = 0;
-            current[j] = 0;  // Update first row as well
-            current[(k+1)*(k+2)-1] = 0;// Update last column as well
-        }else{
-            current[i*(k+2) + j] = 255; // Alive
-            current[j] = 255; // Update first row as well
-            current[(k+1)*(k+2)-1] = 255;
-        }  
-        }
-
-        for(int j = 2; j < k+1; j++){
-            int i = k;
-
-            int alive_neighbours = current[(i+1)*(k+2) + j] + current[(i-1)*(k+2) + j] + current[(i)*(k+2) + (j+1)] + 
-                                        current[(i)*(k+2) + (j-1)] + current[(i+1)*(k+2) + (j+1)] + current[(i+1)*(k+2) + (j-1)] + 
-                                        current[(i-1)*(k+2) + (j-1)] + current[(i-1)*(k+2) + (j+1)];
-            if (alive_neighbours > 765 || alive_neighbours < 510){
-                current[i*(k+2) + j] = 0;
-                current[j] = 0;  // Update first row as well
-            }else{
-                current[i*(k+2) + j] = 255; // Alive
-                current[j] = 255; // Update first row as well
-            }  
-        }
-        // You can now update the first column entry 
-        current[(k)*(k+2)] = current[(k+1)*(k+2)-2];
-        
-        // Now that they are correct, update the top corners using the values you just calculated 
-        // No need to update them before since they are only needed later
-        current[0] = current[(k+1)*(k+2)-2];   // Top left corner
-        current[(k+2)-1] = current[(k*(k+2))+1]; // Top right corner
-
-        printf("Result after %d steps:\n", n+1);
-        print_image(current, k+2);
-    }
+  MPI_File_close(&fh);
 }
+void read_pgm_parallel( unsigned char *ptr, int k, const char *image_name){
+  /*
+  INPUT:
+    - ptr: pointer to the memory location where the matrix will be stored
+    - k: matrix size
+    - image_name: name of file where the matrix is stored.
+  */
+  int rank, size;
+  MPI_Init( NULL, NULL );
+  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
+  MPI_Comm_size( MPI_COMM_WORLD,&size );
 
+  // Defines how many rows each process has to initialise
+  int rows_read = k / size; 
+  if (rank < k%size) // For remainder 
+      rows_read += 1;
+
+  ptr = (unsigned char*)calloc(rows_read*k, sizeof(unsigned char));
+
+  MPI_Offset disp;
+  MPI_File   fh;
+  MPI_File_open(  MPI_COMM_WORLD, image_name, 
+                  MPI_MODE_RDONLY,
+                  MPI_INFO_NULL, &fh  );
+  
+  if (rank >= k % size)
+      rows_read += k % size;
+
+  disp = rank * rows_read * k *sizeof(unsigned char) + 64; // 64 in this case is the hardcoded representation of the header of the images
+
+  MPI_File_seek(fh, disp, MPI_SEEK_CUR);
+  MPI_File_read_all(fh, ptr, rows_read*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+
+  MPI_File_close(&fh);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  /* This part is needed only for testing (ASSUMES 3 MPI processes are being used).
+  FILE* prova_file;
+  char nome_file[] = "prova_read.txt";
+  prova_file = fopen(nome_file, "w");
+  if(rank==0){
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i = 0; i < 3*5; i++)
+          fprintf(prova_file, "%u ",ptr[i]);
+  }
+  printf("\n");
+  MPI_Barrier(MPI_COMM_WORLD);
+  fclose(prova_file);
+  prova_file = fopen(nome_file, "a");
+  if(rank==1){
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i = 0; i < 2*5; i++)
+          fprintf(prova_file, "%u ",ptr[i]);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  fclose(prova_file);
+  prova_file = fopen(nome_file, "a");
+  if(rank==2){
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i = 0; i < 2*5; i++)
+          fprintf(prova_file, "%u ",ptr[i]);
+  }
+  fclose(prova_file);
+  */
+
+  MPI_Finalize();
+  
+}
