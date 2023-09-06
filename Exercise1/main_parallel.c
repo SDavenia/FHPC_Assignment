@@ -86,7 +86,7 @@ void initialize_parallel(int k, char *fname){
   double Time_init = omp_get_wtime() - Tstart_init;
   printf("I am process %d and generating random matrix took %lf s\n",rank, Time_init);
   
-  char fname2[] = "prova.txt";
+  char fname2[] = "prova_write.txt";
   // Open a FILE* stream
   MPI_Barrier(MPI_COMM_WORLD);
   if(rank == 0){
@@ -102,7 +102,17 @@ void initialize_parallel(int k, char *fname){
   MPI_Barrier(MPI_COMM_WORLD);
   if(rank == 1){
       FILE* prova_file = fopen(fname2, "a");
-      fprintf(prova_file,"I am process %d\n", rank);
+      fprintf(prova_file,"\nI am process %d\n", rank);
+      for(int i =0; i<k*rows_initialize;i++){
+          fprintf(prova_file,"%u ", ptr[i]);
+      }
+      fclose(prova_file);
+  }
+  printf("\n");
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 2){
+      FILE* prova_file = fopen(fname2, "a");
+      fprintf(prova_file,"\nI am process %d\n", rank);
       for(int i =0; i<k*rows_initialize;i++){
           fprintf(prova_file,"%u ", ptr[i]);
       }
@@ -115,6 +125,7 @@ void initialize_parallel(int k, char *fname){
   free(ptr);
   MPI_Finalize();
 }
+
 void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize){
   
   MPI_File fh;
@@ -147,14 +158,77 @@ void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, c
                 MPI_MODE_APPEND | MPI_MODE_RDWR, 
                 MPI_INFO_NULL, &fh  );
   
-  if (rank >= k % size)
-      rows_initialize += k % size;
-
-  disp = rank * rows_initialize * k *sizeof(unsigned char);
+  if (rank >= k % size){
+    disp = (rank * rows_initialize +k%size)* k *sizeof(unsigned char);
+  }else{
+    disp = rank * rows_initialize * k *sizeof(unsigned char);
+  }
+  
   MPI_File_seek(fh, disp, MPI_SEEK_CUR);
   MPI_File_write_all(fh, ptr, rows_initialize*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
 
   MPI_File_close(&fh);
+}
+
+void read_pgm_parallel( unsigned char *ptr, int k, const char *image_name){
+  int rank, size;
+  MPI_Init( NULL, NULL );
+  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
+  MPI_Comm_size( MPI_COMM_WORLD,&size );
+
+  // Defines how many rows each process has to initialise
+  int rows_read = k / size; 
+  if (rank < k%size) // For remainder 
+      rows_read += 1;
+
+  ptr = (unsigned char*)calloc(rows_read*k, sizeof(unsigned char));
+
+  MPI_Offset disp;
+  MPI_File   fh;
+  MPI_File_open(  MPI_COMM_WORLD, image_name, 
+                  MPI_MODE_RDONLY,
+                  MPI_INFO_NULL, &fh  );
+  
+  if (rank >= k % size)
+      rows_read += k % size;
+
+  disp = rank * rows_read * k *sizeof(unsigned char) + 64; // 64 in this case is the hardcoded representation of the header of the images
+
+  MPI_File_seek(fh, disp, MPI_SEEK_CUR);
+  MPI_File_read_all(fh, ptr, rows_read*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+
+  MPI_File_close(&fh);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  FILE* prova_file;
+  char nome_file[] = "prova_read.txt";
+  prova_file = fopen(nome_file, "w");
+  if(rank==0){
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i = 0; i < 3*5; i++)
+          fprintf(prova_file, "%u ",ptr[i]);
+  }
+  printf("\n");
+  MPI_Barrier(MPI_COMM_WORLD);
+  fclose(prova_file);
+  prova_file = fopen(nome_file, "a");
+  if(rank==1){
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i = 0; i < 2*5; i++)
+          fprintf(prova_file, "%u ",ptr[i]);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  fclose(prova_file);
+  prova_file = fopen(nome_file, "a");
+  if(rank==2){
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i = 0; i < 2*5; i++)
+          fprintf(prova_file, "%u ",ptr[i]);
+  }
+  fclose(prova_file);
+
+  MPI_Finalize();
+  
 }
 
 int main ( int argc, char **argv )
@@ -210,6 +284,8 @@ int main ( int argc, char **argv )
   }else{ 
     // Read and run a playground
     printf("Run\n");
+    unsigned char* input;
+    read_pgm_parallel(input, k, fname);
     /*int xsize;
     int ysize;
     int maxval;
