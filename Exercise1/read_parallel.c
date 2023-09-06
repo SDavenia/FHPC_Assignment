@@ -28,36 +28,49 @@ int main(int argc, char* argv[]){
         rows_read += 1;
 
     char image_name[] = "init.pgm";
-    if(rank == 0){
-        FILE* image_file; 
-        image_file = fopen(image_name, "r");
-        // *image = NULL; //address of the first element of image
-        int* xsize;
-        int* ysize;
-        int* max_val;
+    unsigned char ptr[rows_read * k];
 
-        // *xsize = *ysize = *maxval = 0; // set to 0 the value of xsize, ysize and maxval
-        *xsize = 0; 
-        *ysize = 0;
+    MPI_Offset disp;
+    MPI_File   fh;
+    MPI_File_open(  MPI_COMM_WORLD, image_name, 
+                    MPI_MODE_RDONLY,
+                    MPI_INFO_NULL, &fh  );
+    
+    if (rank >= k % size)
+        rows_read += k % size;
 
-        char    MagicN[2]; // define a string of 2 elements
-        char   *line = NULL; //define a pointer "line" to NULL
-        size_t  t, n = 0;
-        int counter;
-        // get the Magic Number
-        t = fscanf(image_file, "%2s%*c", MagicN ); // This one reads P5
-        counter += t;
-        t = getline( &line, &n, image_file); // Here we read all the lines starting with #, i.e. all the comments.
-        counter += t;
-        while((line[0]=='#')){
-            t = getline( &line, &n, image_file); // Here we read all the lines starting with #, i.e. all the comments.
-            counter += t;
-            printf("t is %zu\n", t);
-        }
+    disp = rank * rows_read * k *sizeof(unsigned char) + 64; // 64 in this case is the hardcoded representation of the header of the images
 
-      
+    MPI_File_seek(fh, disp, MPI_SEEK_CUR);
+    MPI_File_read_all(fh, ptr, rows_read*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+
+    MPI_File_close(&fh);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    FILE* prova_file;
+    char nome_file[] = "prova.txt";
+    prova_file = fopen(nome_file, "w");
+    if(rank==0){
+        fprintf(prova_file,"I am process %d\n", rank);
+        for(int i = 0; i < 3*5; i++)
+            fprintf(prova_file, "%u ",ptr[i]);
     }
+    MPI_Barrier(MPI_COMM_WORLD);
+    fclose(prova_file);
+    prova_file = fopen(nome_file, "a");
+    if(rank==1){
+        fprintf(prova_file,"I am process %d\n", rank);
+        for(int i = 0; i < 2*5; i++)
+            fprintf(prova_file, "%u ",ptr[i]);
+    }
+    fclose(prova_file);
+
     MPI_Finalize();
+
+
+
+
+
     
     return 0;
 }
