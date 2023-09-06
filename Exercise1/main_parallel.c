@@ -1,13 +1,16 @@
-// FINAL VERSION OF THE OPTIMIZED MAIN (ONLY SERIAL FUNCTIONS)
-// To compile: gcc main.c -o main.exe
-// To run executable to generate playground: ./main.exe -i -k 5 -f init.pgm
-// To run execubtable to play on playground: ./main.exe -r -k 5 -f init.pgm -n 3
+// FINAL VERSION OF THE OPTIMIZED MAIN (parallel)
+// To compile: srun mpicc -fopenmp main_parallel.c -o main_parallel.exe
+// To run executable to generate playground: srun ./main_parallel.exe -i -k 5 -f init.pgm
+// To run execubtable to play on playground: srun ./main_parallel.exe -r -k 5 -f init.pgm -n 3
 // OPTIMIZED and with the errors fixed
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
 #include <time.h>
+#include <mpi.h>
+#include <omp.h>
+
 
 void write_pgm_image( unsigned char *image, int maxval, int xsize, int ysize, const char *image_name);
 void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name);
@@ -16,6 +19,7 @@ void initialize_current(unsigned char* input, unsigned char* current, int k);
 void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps);
 void evolve_dynamic(unsigned char* current, int k, int n_steps);
 
+void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize);
 #define INIT 1
 #define RUN  2
 
@@ -25,8 +29,6 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps);
 #define STATIC  1
 #define CPU_TIME (clock_gettime( CLOCK_PROCESS_CPUTIME_ID, &ts ), (double)ts.tv_sec + (double)ts.tv_nsec * 1e-9)
 
-
-char fname_deflt[] = "game_of_life.pgm";
 
 int   action = 0;
 int   k      = K_DFLT;
@@ -44,26 +46,115 @@ void print_image(unsigned char* ptr, int ncol){
     }
 }
 
-void random_playground(int k, char *fname){
-    /*
-    This function creates the playground and saves it to the pgm file.
-    Always read the matrix from the pgm file to use it.
-    */
-  unsigned char* ptr = (unsigned char*)calloc(k*k, sizeof(unsigned char)); // creates a k*k array of unsigned char
-  // generate a random matrix of 0 and 255
-  unsigned int seed = clock();
+void initialize_parallel(int k, char *fname){
+  int rank, size;
+  MPI_Init( NULL, NULL );
+  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
+  MPI_Comm_size( MPI_COMM_WORLD,&size );  
 
-  for (int i = 0; i < k*k; i++) {
-    unsigned char rand_num = (unsigned char) rand_r(&seed) % 2;
-    ptr[i] = rand_num==1 ? 255 : 0;
-    /*if(rand_num==1){
-      ptr[i] = 255;
-    }else{
-      ptr[i]=rand_num;
-    }*/
+  // Defines how many rows each process has to initialise
+  int rows_initialize = k / size; 
+  if (rank < k%size) // For remainder 
+      rows_initialize += 1;
+
+  //char fname[] = "init.pgm";
+  MPI_File fh;
+  MPI_Offset disp;
+
+  // printf( "I am %d of %d and I have to generate %d rows\n", rank, size, rows_initialize);
+
+  unsigned char* ptr = (unsigned char*)calloc(rows_initialize*k, sizeof(unsigned char)); // Allocate memory for the rows you have to generate.
+  
+  double Tstart_init = omp_get_wtime();
+  #pragma omp parallel
+  {
+    int my_id = omp_get_thread_num();
+    //int cpu_num = sched_getcpu(); // To see what core it is using
+    unsigned int seed = clock();
+    seed += my_id;
+    // printf("I am thread %d of process %d and I am running on core %d\n", my_id, rank, cpu_num);
+
+    #pragma omp for
+    for (int i = 0; i < rows_initialize*k; i++){
+        unsigned char random_num = (unsigned char) rand_r(&seed) % 2;
+        //printf("random_num is %d\n", random_num);
+        ptr[i] = random_num==1 ? 255 : 0;
+    }
+
   }
-  write_pgm_image(ptr, 255, k, k,fname);
-  free(ptr); 
+  
+  double Time_init = omp_get_wtime() - Tstart_init;
+  printf("I am process %d and generating random matrix took %lf s\n",rank, Time_init);
+  
+  char fname2[] = "prova.txt";
+  // Open a FILE* stream
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 0){
+      FILE* prova_file = fopen(fname2, "w");
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i =0; i<k*rows_initialize;i++){
+          fprintf(prova_file,"%u ", ptr[i]);
+      }
+      fclose(prova_file);
+  }
+  printf("\n");
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 1){
+      FILE* prova_file = fopen(fname2, "a");
+      fprintf(prova_file,"I am process %d\n", rank);
+      for(int i =0; i<k*rows_initialize;i++){
+          fprintf(prova_file,"%u ", ptr[i]);
+      }
+      fclose(prova_file);
+  }
+  printf("\n");
+
+  write_pgm_parallel(ptr, 255, k, k, fname, rank, size, rows_initialize);
+
+  free(ptr);
+  MPI_Finalize();
+}
+void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize){
+  
+  MPI_File fh;
+  MPI_Offset disp;
+
+  MPI_File_delete(fname, MPI_INFO_NULL);
+  MPI_File_open(  MPI_COMM_WORLD, fname, 
+                MPI_MODE_CREATE | MPI_MODE_RDWR, 
+                MPI_INFO_NULL, &fh  );
+  MPI_File_close(&fh);
+
+  if (rank == 0) {
+        FILE* file_stream = fopen(fname, "w");  // Open a FILE* stream
+        /*int xsize, ysize, maxval;
+        xsize = k;
+        ysize = k;
+        maxval = 255;*/
+
+        if (file_stream != NULL) {
+            int max_value = size - 1;
+            fprintf(file_stream, "P5\n# generated by\n# Elena Rivaroli and Samuele D'Avenia\n%d %d\n%d\n", xsize, ysize, maxval);
+            fclose(file_stream);
+        } else {
+            fprintf(stderr, "Failed to open the PGM file for writing.\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_File_open(MPI_COMM_WORLD, fname, 
+                MPI_MODE_APPEND | MPI_MODE_RDWR, 
+                MPI_INFO_NULL, &fh  );
+  
+  if (rank >= k % size)
+      rows_initialize += k % size;
+
+  disp = rank * rows_initialize * k *sizeof(unsigned char);
+  MPI_File_seek(fh, disp, MPI_SEEK_CUR);
+  MPI_File_write_all(fh, ptr, rows_initialize*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+
+  MPI_File_close(&fh);
 }
 
 int main ( int argc, char **argv )
@@ -115,11 +206,11 @@ int main ( int argc, char **argv )
   if(action == INIT){
     // create initial conditions
     printf("Initialize\n");
-    random_playground(k,fname);
+    initialize_parallel(k,fname);
   }else{ 
     // Read and run a playground
     printf("Run\n");
-    int xsize;
+    /*int xsize;
     int ysize;
     int maxval;
     unsigned char* input;
@@ -156,7 +247,7 @@ int main ( int argc, char **argv )
     }
     double Time_exec = CPU_TIME - Tstart_exec;
     printf("Execution time: %lf\n", Time_exec);
-    free(current);
+    free(current);*/
   }
 
   return 0;
