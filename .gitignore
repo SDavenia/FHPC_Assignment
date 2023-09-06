@@ -41,6 +41,7 @@ Thumbs.db
 Basic/.DS_Store
 .vscode/
 
-# For now images #
+# Images and text #
 ##################
 *.pgm
+*.txt

@@ -92,6 +92,17 @@ int main(int argc, char* argv[])
         fclose(prova_file);
     }
     printf("\n");
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank == 2){
+        FILE* prova_file = fopen(fname2, "a");
+        fprintf(prova_file,"I am process %d\n", rank);
+        for(int i =0; i<k*rows_initialize;i++){
+            fprintf(prova_file,"%u ", ptr[i]);
+        }
+        fclose(prova_file);
+    }
+    printf("\n");
    
 
     MPI_File_delete(fname, MPI_INFO_NULL);
@@ -122,10 +133,15 @@ int main(int argc, char* argv[])
                   MPI_MODE_APPEND | MPI_MODE_RDWR, 
                   MPI_INFO_NULL, &fh  );
     
+    printf("I am %d and I have to initialize %d rows\n", rank, rows_initialize);
+    
+    
     if (rank >= k % size)
-        rows_initialize += k % size;
-
-    disp = rank * rows_initialize * k *sizeof(unsigned char);
+        disp = (rank * rows_initialize + k%size) * k *sizeof(unsigned char);
+    else
+        disp = rank * rows_initialize * k *sizeof(unsigned char);
+    
+    printf("I am %d and I have to start writing at %d rows\n", rank, disp / k);
     MPI_File_seek(fh, disp, MPI_SEEK_CUR);
     MPI_File_write_all(fh, ptr, rows_initialize*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
 
