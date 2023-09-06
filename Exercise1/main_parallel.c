@@ -96,12 +96,18 @@ int main ( int argc, char **argv )
   if(action == INIT){
     // create initial conditions
     // printf("Initialize\n");
+    //double Tstart_init = omp_get_wtime();
     initialize_parallel(k,fname);
+    //double Time_init = omp_get_wtime() - Tstart_init;
+    //printf("write time : %lf\n", Time_init);
   }else{ 
     // Read and run a playground
     // printf("Run\n");
     unsigned char* input;
+    // double Tstart_init = omp_get_wtime();
     read_pgm_parallel(input, k, fname);
+    // double Time_init = omp_get_wtime() - Tstart_init;
+    // printf("read time : %lf\n", Time_init);
     /*
     printf("Initial image\n");
     print_image(input, k);
@@ -171,6 +177,7 @@ void initialize_parallel(int k, char *fname){
   unsigned char* ptr = (unsigned char*)malloc(rows_initialize*k * sizeof(unsigned char)); // Allocate memory for the rows you have to generate.
   
   // In this parallel region the different threads generate random numbers on different sections of the matrix.
+  //double Tstart_init = omp_get_wtime();
   #pragma omp parallel
   {
     int my_id = omp_get_thread_num();
@@ -188,6 +195,8 @@ void initialize_parallel(int k, char *fname){
     }
 
   }
+  // double Time_init = omp_get_wtime() - Tstart_init;
+  // printf("I am process %d and generating random matrix took %lf s\n",rank, Time_init);
 
   // THIS SECTION HERE IS ONLY NEEDED FOR TESTING (HERE WE ONLY HAVE 3 PROCESSORS).
   /*
