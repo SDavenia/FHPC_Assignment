@@ -48,8 +48,10 @@ void print_image(unsigned char* ptr, int k){
 
 // Here we report the functions which are used to generate the image, write to a pgm file, and read from a pgm file respectively
 void initialize_parallel(int k, char *fname);
-void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize);
-void read_pgm_parallel( unsigned char *ptr, int k, const char *image_name);
+void write_pgm_parallel(unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize);
+void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name);
+void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name);
+
 
 int main ( int argc, char **argv )
 {
@@ -105,7 +107,9 @@ int main ( int argc, char **argv )
     // printf("Run\n");
     unsigned char* input;
     // double Tstart_init = omp_get_wtime();
-    read_pgm_parallel(input, k, fname);
+    // read_pgm_parallel(&input, k, fname);
+    read_pgm_parallel_frame(&input, k, fname);
+    // free(input);
     // double Time_init = omp_get_wtime() - Tstart_init;
     // printf("read time : %lf\n", Time_init);
     /*
@@ -141,8 +145,10 @@ int main ( int argc, char **argv )
     double Time_exec = CPU_TIME - Tstart_exec;
     printf("Execution time: %lf\n", Time_exec);
     free(current);*/
+    // free(input);
     free(input);
   }
+
 
   return 0;
 }
@@ -293,7 +299,7 @@ void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, c
 
   MPI_File_close(&fh);
 }
-void read_pgm_parallel( unsigned char *ptr, int k, const char *image_name){
+void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name){
   /*
   INPUT:
     - ptr: pointer to the memory location where the matrix will be stored
@@ -310,7 +316,7 @@ void read_pgm_parallel( unsigned char *ptr, int k, const char *image_name){
   rows_read = (rank < k % size) ? rows_read+1 : rows_read;
   // printf("I am process %d and I have to read in my memory %d rows\n", rank, rows_read);
 
-  ptr = (unsigned char*)malloc(rows_read*k * sizeof(unsigned char));
+  *ptr = (unsigned char*)malloc(rows_read*k * sizeof(unsigned char));
 
   MPI_Offset disp;
   MPI_File   fh;
@@ -324,44 +330,141 @@ void read_pgm_parallel( unsigned char *ptr, int k, const char *image_name){
   // printf("I am process %d and I have to start writing at %d\n", rank, disp);
 
   MPI_File_seek(fh, disp, MPI_SEEK_CUR);
-  MPI_File_read_all(fh, ptr, rows_read*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+  MPI_File_read_all(fh, *ptr, rows_read*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
 
   MPI_File_close(&fh);
   MPI_Barrier(MPI_COMM_WORLD);
 
   // This part is needed only for testing (ASSUMES 3 MPI processes are being used).
+  
   /*
   FILE* prova_file;
   char nome_file[] = "prova_read.txt";
-  prova_file = fopen(nome_file, "w");
   if(rank==0){
-      fprintf(prova_file,"I am process %d\n", rank);
-      for(int i = 0; i < rows_read * k; i++)
-          fprintf(prova_file, "%u ",ptr[i]);
+    prova_file = fopen(nome_file, "w");
+    fprintf(prova_file,"I am process %d\n", rank);
+    for(int i = 0; i < rows_read * k; i++)
+        fprintf(prova_file, "%u ",(*ptr)[i]);
+    fprintf(prova_file, "\n");
+    fclose(prova_file);
   }
-  fprintf(prova_file, "\n");
   MPI_Barrier(MPI_COMM_WORLD);
-  fclose(prova_file);
-  prova_file = fopen(nome_file, "a");
   if(rank==1){
-      fprintf(prova_file,"I am process %d\n", rank);
-      for(int i = 0; i < rows_read * k; i++)
-          fprintf(prova_file, "%u ",ptr[i]);
+    prova_file = fopen(nome_file, "a");
+    fprintf(prova_file,"I am process %d\n", rank);
+    for(int i = 0; i < rows_read * k; i++)
+        fprintf(prova_file, "%u ",(*ptr)[i]);
+    fprintf(prova_file, "\n");
+    fclose(prova_file);
   }
-  fprintf(prova_file, "\n");
   MPI_Barrier(MPI_COMM_WORLD);
-  fclose(prova_file);
-  prova_file = fopen(nome_file, "a");
   if(rank==2){
+    prova_file = fopen(nome_file, "a");
+    fprintf(prova_file,"I am process %d\n", rank);
+    for(int i = 0; i < rows_read * k; i++)
+        fprintf(prova_file, "%u ",(*ptr)[i]);
+    fprintf(prova_file, "\n");
+    fclose(prova_file);
+  }
+  */
+  MPI_Finalize();
+  
+}
+void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name){
+  /*
+  INPUT:
+    - ptr: pointer to the memory location where the matrix will be stored
+    - k: matrix size
+    - image_name: name of file where the matrix is stored.
+  
+  It initializes a memory area pointed by ptr with an additional row for the first and last process.
+  To be more precise, the last row is also pasted before the first, and viceversa for the last. 
+  This is needed
+  */
+  int rank, size;
+  MPI_Init( NULL, NULL );
+  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
+  MPI_Comm_size( MPI_COMM_WORLD,&size );
+
+  // Defines how many rows each process has to initialise
+  int rows_read = k / size; 
+  rows_read = (rank < k % size) ? rows_read+1 : rows_read;
+  // printf("I am process %d and I have to read in my memory %d rows\n", rank, rows_read);
+
+  if (rank == 0 || rank == (size-1))
+    *ptr = (unsigned char*)malloc((rows_read+1)*k * sizeof(unsigned char));
+  else
+    *ptr = (unsigned char*)malloc(rows_read*k * sizeof(unsigned char));
+
+  MPI_Offset disp;
+  MPI_File   fh;
+  MPI_File_open(  MPI_COMM_WORLD, image_name, 
+                  MPI_MODE_RDONLY,
+                  MPI_INFO_NULL, &fh  );
+
+  
+  disp = (rank >= k % size) ? (rank * rows_read + k % size) * k * sizeof(unsigned char) : rank * rows_read * k * sizeof(unsigned char);
+  disp += 64;  // 64 in this case is the hardcoded representation of the header of the images
+  // printf("I am process %d and I have to start writing at %d\n", rank, disp);
+  int u=0;
+  if(rank == 0){
+    MPI_Offset disp_temp;
+    disp_temp = k*k + 64 - k;
+    MPI_File_seek(fh, disp_temp, MPI_SEEK_SET);
+    MPI_File_read(fh, *ptr, k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+    MPI_File_seek(fh, 0, MPI_SEEK_SET); // Needed because MPI_SEEK_CUR does offset + current, otherwise it goes after the end.
+    u=k;
+  }
+
+  MPI_File_seek(fh, disp, MPI_SEEK_CUR);
+  MPI_File_read_all(fh, (*ptr)+u, rows_read*k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+
+  if(rank == size -1){
+    MPI_Offset disp_temp;
+    disp_temp = 64;
+    MPI_File_seek(fh, disp_temp, MPI_SEEK_SET);
+    MPI_File_read(fh, (*ptr) + rows_read*k, k, MPI_UNSIGNED_CHAR, MPI_STATUS_IGNORE);
+  }
+
+  MPI_File_close(&fh);
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  // This part is needed only for testing (ASSUMES 3 MPI processes are being used).
+   /*
+  FILE* prova_file;
+  char nome_file[] = "prova_read.txt";
+  if(rank==0){
+    prova_file = fopen(nome_file, "w");
+    fprintf(prova_file,"I am process %d\n", rank);
+    for(int i = 0; i < (rows_read+1) * k; i++)
+        fprintf(prova_file, "%u ",(*ptr)[i]);
+    
+    fprintf(prova_file, "\n");
+    fclose(prova_file);
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+  if(rank==1){
+      prova_file = fopen(nome_file, "a");
       fprintf(prova_file,"I am process %d\n", rank);
       for(int i = 0; i < rows_read * k; i++)
-          fprintf(prova_file, "%u ",ptr[i]);
-  }
-  fprintf(prova_file, "\n");
-  fclose(prova_file);
-  */
-  
+          fprintf(prova_file, "%u ",(*ptr)[i]);
 
+     fprintf(prova_file, "\n");
+     fclose(prova_file);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank==1){
+    prova_file = fopen(nome_file, "a");
+    fprintf(prova_file,"I am process %d\n", rank);
+    for(int i = 0; i < (rows_read+1) * k; i++)
+        fprintf(prova_file, "%u ",(*ptr)[i]);
+    fprintf(prova_file, "\n");
+    fclose(prova_file);
+  }
+  */
   MPI_Finalize();
+
   
 }
