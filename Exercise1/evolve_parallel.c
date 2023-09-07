@@ -3,8 +3,17 @@
 #include <string.h>
 #include <getopt.h>
 #include <time.h>
-//#include <mpi.h>
-//#include <omp.h>
+#include <omp.h>
+/*
+  double Tstart_init = omp_get_wtime();
+  double Time_init = omp_get_wtime() - Tstart_init;
+  printf("I am process %d and generating random matrix took %lf s\n",rank, Time_init);
+*/
+
+/*
+THIS IS THE CORRECT VERSION FOR THE SERIAL CODE, with frame only above and below.
+Use this as reference to check whether the Conway evolution was correct.
+*/
 
 void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name);
 void initialize_current(unsigned char* input, unsigned char* current, int k);
@@ -25,29 +34,37 @@ int main(int argc, char* argv[]){
     int xsize;
     int ysize;
     int maxval;
-    char fname[] = "init.pgm";
+    char fname[] = "init_20000.pgm";
     unsigned char* input;
     read_pgm_image(&input, &maxval, &xsize, &ysize, fname);
-    int k=4;
-    printf("Input:\n");
-    print_image(input,k,k);
+    int k;
+    if(argc > 1)
+      k = atoi(argv[1]);
+    else
+      k = 5;
+    
+    //printf("Input:\n");
+    //print_image(input,k,k);
 
     unsigned char* current = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
     initialize_current(input, current, k);
-    printf("\nCurrent:\n");
-    print_image(current,k+2,k);
+    //printf("\nCurrent:\n");
+    //print_image(current,k+2,k);
 
 
     //if(e == 0){ // Ordered
-    printf("ORDERED EXECUTION\n");
-    evolve_dynamic(current, k, 2);
+    //printf("ORDERED EXECUTION\n");
+    //evolve_dynamic(current, k, 2);
     //}else{ // Static
     printf("STATIC EXECUTION\n");
     unsigned char* next = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
     printf("Allocated memory for next using malloc\n");
 
+    double Tstart_stat = omp_get_wtime();
     evolve_static(current, next, k, 2);
-    printf("Finished static evolution");
+    double Time_stat = omp_get_wtime() - Tstart_stat;
+    printf("Time %lf\n", Time_stat);
+    //printf("Finished static evolution");
     free(next);
     //}
 
@@ -158,28 +175,44 @@ void initialize_current(unsigned char* input, unsigned char* current, int k){
 
 void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps){
     for(int n_step=0; n_step < n_steps; n_step++){
-
-        for(int i=1;i<k+1;i++){
+        int nthreads;
+        #pragma omp parallel
+        {
+          int myid = omp_get_thread_num();
+          #pragma omp master
+            nthreads = omp_get_num_threads();
+        
+          #pragma omp for
+          for(int i=1;i<k+1;i++){
+            //printf("I am thread %d doing row %d\n", myid, i);
             for(int j=0; j<k;j++){
                 int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                     current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
                     current[(i-1)*k + j] + current[(i+1)*k + j];
                 next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
             }
+          }
+          // Here there is an implicit barrier of the for loop
+
+          #pragma omp single nowait
+          for (int i = 0; i < k; i++){
+              next[i] = next[(k)*k + i];
+          }
+
+          #pragma omp single nowait
+          for (int i = 0; i < k; i++){
+              next[(k+1)*k+i]=next[k+i];
+          }
         }
-        for (int i = 0; i < k; i++){
-            next[i] = next[(k)*k + i];
-        }
-        for (int i = 0; i < k; i++){
-            next[(k+1)*k+i]=next[k+i];
-        }
+        // Here there is an implicit barrier for the end of the parallel region.
+
         unsigned char* tmp;
         tmp = next;
         next = current;
         current=tmp;
 
-        printf("Step %d:\n", n_step);
-        print_image(current, k+2,k);
+        //printf("Step %d:\n", n_step+1);
+        //print_image(current, k+2,k);
     }
 
 }
