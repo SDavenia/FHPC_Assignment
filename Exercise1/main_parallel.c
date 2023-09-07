@@ -97,55 +97,25 @@ int main ( int argc, char **argv )
   // 2- Depending on whether initialisation or execution is required, perform it.
   if(action == INIT){
     // create initial conditions
-    // printf("Initialize\n");
     //double Tstart_init = omp_get_wtime();
     initialize_parallel(k,fname);
     //double Time_init = omp_get_wtime() - Tstart_init;
     //printf("write time : %lf\n", Time_init);
   }else{ 
     // Read and run a playground
-    // printf("Run\n");
     unsigned char* input;
-    // double Tstart_init = omp_get_wtime();
-    // read_pgm_parallel(&input, k, fname);
     read_pgm_parallel_frame(&input, k, fname);
-    // free(input);
-    // double Time_init = omp_get_wtime() - Tstart_init;
-    // printf("read time : %lf\n", Time_init);
-    /*
-    printf("Initial image\n");
-    print_image(input, k);
-    printf("INITALIZING THE FRAME\n");
-    unsigned char* current = (unsigned char*)malloc((k+2)*(k+2)*sizeof(unsigned char));
-    printf("Allocated memory for current using malloc\n");
-
-    double Tstart_init = CPU_TIME;
-    initialize_current(input, current, k);
-    double Time_init = CPU_TIME - Tstart_init;
-    printf("Initializing time: %lf\n", Time_init);
-
-    printf("FREE USELESS STUFF\n");
-    free(input); // Since we do not need it anymore
-    if (fname != NULL)
-        free(fname);
-
-    double Tstart_exec = CPU_TIME;
+    
     if(e == 0){ // Ordered
-        printf("ORDERED EXECUTION\n");
-        evolve_dynamic(current, k, n);
-    }else{ // Static
-        printf("STATIC EXECUTION\n");
-        unsigned char* next = (unsigned char*)malloc((k+2)*(k+2)*sizeof(unsigned char));
-        printf("Allocated memory for next using malloc\n");
-
-        evolve_static(current, next, k, n);
-        printf("Finished static evolution");
-        free(next);
+      printf("ORDERED EXECUTION\n");
+      //evolve_dynamic_parallel(current, k, n);
+    }else{ 
+      printf("STATIC EXECUTION\n");    
     }
-    double Time_exec = CPU_TIME - Tstart_exec;
-    printf("Execution time: %lf\n", Time_exec);
-    free(current);*/
-    // free(input);
+    
+    
+    if (fname != NULL)
+      free(fname);
     free(input);
   }
 
@@ -248,6 +218,7 @@ void initialize_parallel(int k, char *fname){
   free(ptr);
   MPI_Finalize();
 }
+
 void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize){
   /*
   INPUT:
@@ -299,6 +270,7 @@ void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, c
 
   MPI_File_close(&fh);
 }
+
 void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name){
   /*
   INPUT:
@@ -370,6 +342,7 @@ void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name){
   MPI_Finalize();
   
 }
+
 void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name){
   /*
   INPUT:
