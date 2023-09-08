@@ -56,7 +56,10 @@ void write_pgm_parallel(unsigned char *ptr, int maxval, int xsize, int ysize, co
 // To read matrix from file
 void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name, int rank, int size, int rows_read);
 
-// To evolve static
+// To evolve static: evolve_static is a wrapper which decides whether to call OMP or MPI version.
+//                   this is because MPI version does not work unless we have at least 2 processes (otherwise no messages to receive).
+void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read);
+void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps);
 void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read);
 
 int main ( int argc, char **argv )
@@ -130,7 +133,7 @@ int main ( int argc, char **argv )
     }else{ 
       printf("STATIC EXECUTION\n");
       double Tstart_init = omp_get_wtime();
-      evolve_static_MPI(current, next, k, n, rank, size, rows_read); 
+      evolve_static(current, next, k, n, rank, size, rows_read); 
       double Time_init = omp_get_wtime() - Tstart_init;
       printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_init);
     }
@@ -383,6 +386,13 @@ void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name,
     
 }
 
+void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read){
+  if(size == 1)
+    evolve_static_OMP(current, next, k, n_steps);
+  else
+    evolve_static_MPI(current, next,k , n_steps, rank, size, rows_read);
+}
+
 void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read){
   
   MPI_Request request[2]; // Array of MPI_Request, necessary to ensure that the non blocking receive is complete
@@ -540,6 +550,50 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
       //printf("Step %d:\n", n_step+1);
       //print_image(current, k+2,k);
   }
+
+}
+
+void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps){
+    for(int n_step=0; n_step < n_steps; n_step++){
+        int nthreads;
+        #pragma omp parallel
+        {
+          int myid = omp_get_thread_num();
+          #pragma omp master
+            nthreads = omp_get_num_threads();
+        
+          #pragma omp for
+          for(int i=1;i<k+1;i++){
+            //printf("I am thread %d doing row %d\n", myid, i);
+            for(int j=0; j<k;j++){
+                int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                    current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                    current[(i-1)*k + j] + current[(i+1)*k + j];
+                next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
+            }
+          }
+          // Here there is an implicit barrier of the for loop
+
+          #pragma omp single nowait
+          for (int i = 0; i < k; i++){
+              next[i] = next[(k)*k + i];
+          }
+
+          #pragma omp single nowait
+          for (int i = 0; i < k; i++){
+              next[(k+1)*k+i]=next[k+i];
+          }
+        }
+        // Here there is an implicit barrier for the end of the parallel region.
+
+        unsigned char* tmp;
+        tmp = next;
+        next = current;
+        current=tmp;
+
+        //printf("Step %d:\n", n_step+1);
+        //print_image(current, k+2,k);
+    }
 
 }
 
