@@ -129,7 +129,10 @@ int main ( int argc, char **argv )
       //evolve_dynamic_parallel(current, k, n);
     }else{ 
       printf("STATIC EXECUTION\n");
+      double Tstart_init = omp_get_wtime();
       evolve_static_MPI(current, next, k, n, rank, size, rows_read); 
+      double Time_init = omp_get_wtime() - Tstart_init;
+      printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_init);
     }
     
     
