@@ -1,7 +1,7 @@
 // FINAL VERSION OF THE OPTIMIZED MAIN (parallel)
-// To compile: srun mpicc -fopenmp main_parallel.c -o main_parallel.exe
-// To run executable to generate playground: srun ./main_parallel.exe -i -k 5 -f init.pgm
-// To run execubtable to play on playground: srun ./main_parallel.exe -r -k 5 -f init.pgm -n 3
+// To compile: srun mpicc -fopenmp main_parallel_senza64.c -o main_parallel_senza64.exe
+// To run executable to generate playground: srun ./main_parallel_senza64.exe -i -k 5 -f init.pgm
+// To run execubtable to play on playground: srun ./main_parallel_senza64.exe -r -k 5 -f init.pgm -n 3
 
 /*
   double Tstart_init = omp_get_wtime();
@@ -319,42 +319,59 @@ void read_pgm_parallel(unsigned char **ptr, int *maxval, int *xsize, int *ysize,
 
 
   /*-------------------------------------------------------*/
-  FILE* image_file; 
-  image_file = fopen(image_name, "r");
+  if(rank==0){
+    FILE* image_file; 
+    image_file = fopen(image_name, "r");
+    int counter=0;
 
-  /*int* xsize;
-  int* ysize;
-  int* maxval;
-  *xsize = *ysize = *maxval = 0;*/
-  *xsize = *ysize = *maxval = 0;
-  printf("xsize is at %p\n",xsize);
-  printf("ysize is at %p\n",ysize);
-  printf("maxval is at %p\n",maxval);
 
-  char    MagicN[2]; // define a string of 2 elements
-  char   *line = NULL; //define a pointer "line" to NULL
-  size_t  t, n = 0;
+    /*int* xsize;
+    int* ysize;
+    int* maxval;
+    *xsize = *ysize = *maxval = 0;*/
+    *xsize = *ysize = *maxval = 0;
+    printf("xsize is at %p\n",xsize);
+    printf("ysize is at %p\n",ysize);
+    printf("maxval is at %p\n",maxval);
 
-  // get the Magic Number
-  t = fscanf(image_file, "%2s%*c", MagicN ); // This one reads P5
+    char    MagicN[2]; // define a string of 2 elements
+    char   *line = NULL; //define a pointer "line" to NULL
+    size_t  t, n = 0;
 
-  // skip all the comments
-  t = getline( &line, &n, image_file); // Here we read all the lines starting with #, i.e. all the comments.
-  while ( (t > 0) && (line[0]=='#') )
-    t = getline( &line, &n, image_file);
-  
-  if (t > 0){
-    t = sscanf(line, "%d%*c%d%*c%d%*c", xsize, ysize, maxval);  // This one reads the number
-    if ( t < 3 )
-      fscanf(image_file, "%d%*c", maxval);
-  }else{
-    *maxval = -1;         // this is the signal that there was an I/O error
-        // while reading the image header
-    free( line );
-    return;
+    // get the Magic Number
+    t = fscanf(image_file, "%2s%*c", MagicN ); // This one reads P5
+    printf("P5 is %d\n",t);
+    counter+=3;
+
+    // skip all the comments
+    t = getline( &line, &n, image_file); // Here we read all the lines starting with #, i.e. all the comments.
+    printf("First line is %d\n",t);
+    counter+=t;
+    while ( (t > 0) && (line[0]=='#') ){
+      t = getline( &line, &n, image_file);
+      printf("Second line is %d\n",t);
+      counter+=t;
+    }
+    if (t > 0){
+      t = sscanf(line, "%d%*c%d%*c%d%*c", xsize, ysize, maxval);  // This one reads the number
+      printf("Numbers are %d\n",t);
+      counter+=t;
+      if ( t < 3 ){
+        printf("Here\n");
+        counter+=fscanf(image_file, "%d%*c", maxval);
+        printf("Here is %d\n",fscanf(image_file, "%d%*c", maxval));
+        counter++;
+      }
+    }else{
+      *maxval = -1;         // this is the signal that there was an I/O error
+          // while reading the image header
+      free( line );
+      return;
+    }
+    printf("Number of characters is %d\n", counter);
+    free(line);
+    fclose(image_file);
   }
-  free(line);
-  fclose(image_file);
   /*-------------------------------------------------------*/
   
   
@@ -417,6 +434,7 @@ void read_pgm_parallel(unsigned char **ptr, int *maxval, int *xsize, int *ysize,
   MPI_Finalize();
   
 }
+
 void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name){
   /*
   INPUT:
