@@ -1,7 +1,7 @@
 // FINAL VERSION OF THE OPTIMIZED MAIN (parallel)
-// To compile: srun mpicc -fopenmp main_parallel2.c -o main_parallel2.exe
-// To run executable to generate playground: srun ./main_parallel2.exe -i -k 5 -f init.pgm
-// To run execubtable to play on playground: srun ./main_parallel2.exe -r -k 5 -f init.pgm -n 3
+// To compile: srun mpicc -fopenmp main_parallel.c -o main_parallel.exe
+// To run executable to generate playground: srun ./main_parallel.exe -i -k 5 -f init.pgm
+// To run execubtable to play on playground: srun ./main_parallel.exe -r -k 5 -f init.pgm -n 3
 
 /*
   This code is an update on main_parallel_old.
@@ -369,3 +369,4 @@ void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name)
 
   
 }
+

@@ -52,8 +52,8 @@ int main(int argc, char* argv[]){
     unsigned char* next = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
     printf("Allocated memory for next using malloc\n");
 
-    evolve_static(current, next, k, 2);
-    printf("Finished static evolution");
+    evolve_static(current, next, k, 100);
+    printf("Finished static evolution\n");
     free(next);
     //}
 
@@ -184,8 +184,10 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
         next = current;
         current=tmp;
 
-        printf("Step %d:\n", n_step);
-        print_image(current, k+2,k);
+        if(n_step == 50){
+          printf("Step %d:\n", n_step);
+          print_image(current, k+2,k);
+        }
     }
 
 }
