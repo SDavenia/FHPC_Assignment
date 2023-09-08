@@ -49,11 +49,15 @@ void print_image(unsigned char* ptr, int k){
 }
 
 // Here we report the functions which are used to generate the image, write to a pgm file, and read from a pgm file respectively
+// To initialize and write the matrix
 void initialize_parallel(int k, char *fname);
 void write_pgm_parallel(unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize);
-void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name);
-void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name);
 
+// To read matrix from file
+void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name, int rank, int size, int rows_read);
+
+// To evolve static
+void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read);
 
 int main ( int argc, char **argv )
 {
@@ -104,21 +108,37 @@ int main ( int argc, char **argv )
     //double Time_init = omp_get_wtime() - Tstart_init;
     //printf("write time : %lf\n", Time_init);
   }else{ 
+    int rank, size;
+    MPI_Init( NULL, NULL );
+    MPI_Comm_rank( MPI_COMM_WORLD,&rank );
+    MPI_Comm_size( MPI_COMM_WORLD,&size );
+
+    // Defines how many rows each process has to initialise
+    int rows_read = k / size; 
+    rows_read = (rank < k % size) ? rows_read+1 : rows_read;
+    
     // Read and run a playground
-    unsigned char* input;
-    read_pgm_parallel_frame(&input, k, fname);
+    unsigned char* current;
+    read_pgm_parallel_frame(&current, k, fname, rank, size, rows_read);
+
+    unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
+
     
     if(e == 0){ // Ordered
       printf("ORDERED EXECUTION\n");
       //evolve_dynamic_parallel(current, k, n);
     }else{ 
-      printf("STATIC EXECUTION\n");    
+      printf("STATIC EXECUTION\n");
+      evolve_static_MPI(current, next, k, n, rank, size, rows_read); 
     }
     
     
     if (fname != NULL)
       free(fname);
-    free(input);
+    free(next);
+    free(current);
+
+    MPI_Finalize();
   }
 
 
@@ -271,7 +291,7 @@ void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, c
   MPI_File_close(&fh);
 }
 
-void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name){
+void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name, int rank, int size, int rows_read){
   /*
   INPUT:
     - ptr: pointer to the memory location where the matrix will be stored
@@ -281,14 +301,7 @@ void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name)
   Each process gets allocated an amount of memory which corresponds to the rows it has to evolve plus the one above and below
     which are needed for correct update in parallel.
   */
-  int rank, size;
-  MPI_Init( NULL, NULL );
-  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
-  MPI_Comm_size( MPI_COMM_WORLD,&size );
-
-  // Defines how many rows each process has to initialise
-  int rows_read = k / size; 
-  rows_read = (rank < k % size) ? rows_read+1 : rows_read;
+  
   // printf("I am process %d and I have to read in my memory %d rows\n", rank, rows_read);
 
   // Added +2 since each process will also need the row above and below the rows it has to update.
@@ -364,9 +377,166 @@ void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name)
     fclose(prova_file);
   }
   */
-  
-  MPI_Finalize();
+    
+}
 
+void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read){
   
+  MPI_Request request[2]; // Array of MPI_Request, necessary to ensure that the non blocking receive is complete
+
+  for(int n_step=0; n_step < n_steps; n_step++){
+      int nthreads;
+      #pragma omp parallel
+      {
+        int myid = omp_get_thread_num();
+        #pragma omp master
+          nthreads = omp_get_num_threads();
+      
+        #pragma omp for
+        for(int i=1;i<rows_read+1;i++){
+          //printf("I am thread %d doing row %d\n", myid, i);
+          for(int j=0; j<k;j++){
+              int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                  current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                  current[(i-1)*k + j] + current[(i+1)*k + j];
+              next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
+          }
+        }
+        // Here there is an implicit barrier of the for loop
+        /* QUESTI VANNO SOSTITUITI CON UN MESSAGGIO
+        #pragma omp single nowait
+        for (int i = 0; i < k; i++){
+            next[i] = next[(k)*k + i];
+        }
+
+        #pragma omp single nowait
+        for (int i = 0; i < k; i++){
+            next[(k+1)*k+i]=next[k+i];
+        }
+        */
+      }
+      // Here there is an implcit barrier for the end of the parallel region.
+
+      if(rank == 0){ // TAG IS ALWAYS THE RANK OF THE SENDING PROCESS + n_step
+        // Send message to last process
+        MPI_Isend(next+k, k, MPI_UNSIGNED_CHAR, size-1, rank + n_step + 1, MPI_COMM_WORLD, &request[0]);
+        // Send message to the next process
+        MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
+        
+        // Blocking receive message
+        // Upper row receive
+        MPI_Recv(next, k, MPI_UNSIGNED_CHAR, size-1, size-1 + n_step + 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // Lower row receive
+        MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+      }else if(rank == size-1){
+        // Send message to process before
+        MPI_Isend(next+k, k, MPI_UNSIGNED_CHAR, rank-1, rank + n_step, MPI_COMM_WORLD, &request[0]);
+        // Send message to process 0
+        MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, rank + n_step +1 , MPI_COMM_WORLD, &request[1]);
+        
+        // int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+        //   MPI_Comm comm, MPI_Status *status)
+        // BLOCKING RECEIVE
+        // Upper row receive
+        MPI_Recv(next, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // Lower row receive
+        MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, 0+n_step+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      }else{
+        // Send message to process before
+        MPI_Isend(next+k, k, MPI_UNSIGNED_CHAR, rank-1, rank + n_step, MPI_COMM_WORLD, &request[0]);
+        // Send message to process after
+        MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
+        
+        // int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
+        //   MPI_Comm comm, MPI_Status *status)
+        // BLOCKING RECEIVE
+        // Upper row receive
+        MPI_Recv(next, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // Lower row receive
+        MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1+n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      }
+      MPI_Waitall(2, request, MPI_STATUS_IGNORE);
+
+      unsigned char* tmp;
+      tmp = next;
+      next = current;
+      current=tmp;
+
+      /*
+      // Questa parte serve solo a controllare
+      if(n_step == 50){
+        FILE* prova_file;
+        char nome_file[] = "prova_read.txt";
+        if(n_step==0){
+          if(rank==0){
+            prova_file = fopen(nome_file, "w");
+            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
+            for(int i = 0; i < (rows_read+2) * k; i++)
+                fprintf(prova_file, "%u ",current[i]);
+            
+            fprintf(prova_file, "\n");
+            fclose(prova_file);
+          }
+        }else{
+          if(rank==0){
+            prova_file = fopen(nome_file, "w");
+            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
+            for(int i = 0; i < (rows_read+2) * k; i++)
+                fprintf(prova_file, "%u ",current[i]);
+            
+            fprintf(prova_file, "\n");
+            fclose(prova_file);
+          } 
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        
+        if(rank==1){
+            prova_file = fopen(nome_file, "a");
+            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
+            for(int i = 0; i < (rows_read+2) * k; i++)
+                fprintf(prova_file, "%u ",current[i]);
+
+          fprintf(prova_file, "\n");
+          fclose(prova_file);
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        if(rank==2){
+          prova_file = fopen(nome_file, "a");
+          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
+          for(int i = 0; i < (rows_read+2) * k; i++)
+              fprintf(prova_file, "%u ",current[i]);
+          fprintf(prova_file, "\n");
+          fclose(prova_file);
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        if(rank==3){
+          prova_file = fopen(nome_file, "a");
+          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
+          for(int i = 0; i < (rows_read+2) * k; i++)
+              fprintf(prova_file, "%u ",current[i]);
+          fprintf(prova_file, "\n");
+          fclose(prova_file);
+        }
+
+        MPI_Barrier(MPI_COMM_WORLD);
+        if(rank==4){
+          prova_file = fopen(nome_file, "a");
+          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
+          for(int i = 0; i < (rows_read+2) * k; i++)
+              fprintf(prova_file, "%u ",current[i]);
+          fprintf(prova_file, "\n");
+          fclose(prova_file);
+        }
+      }
+      */
+
+      //printf("Step %d:\n", n_step+1);
+      //print_image(current, k+2,k);
+  }
+
 }
 

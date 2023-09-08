@@ -55,7 +55,7 @@ int main(int argc, char* argv[]){
     rows_read = (rank < k % size) ? rows_read+1 : rows_read;
 
     read_pgm_parallel_frame(&current, k, fname, rank, size, rows_read);
-    unsigned char* next = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
+    unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
 
     evolve_static_MPI(current, next, k, 100, rank, size, rows_read);
     /*
