@@ -20,7 +20,7 @@ void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name,
 void initialize_current(unsigned char* input, unsigned char* current, int k);
 void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps);
 void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read);
-void evolve_dynamic(unsigned char* current, int k, int n_steps);
+void evolve_ordered_OMP(unsigned char* current, int k, int n_steps);
 
 void print_image(unsigned char* ptr, int nrow, int ncol){
     for(int i = 0; i < nrow; i++){
@@ -57,12 +57,16 @@ int main(int argc, char* argv[]){
     read_pgm_parallel_frame(&current, k, fname, rank, size, rows_read);
     unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
 
-    evolve_static_MPI(current, next, k, 100, rank, size, rows_read);
+    //evolve_static_MPI(current, next, k, 100, rank, size, rows_read);
     /*
     double Tstart_stat = omp_get_wtime();
     double Time_stat = omp_get_wtime() - Tstart_stat;
     printf("Time %lf\n", Time_stat);
     */
+    double Tstart_ord = omp_get_wtime();
+    evolve_ordered_OMP(current, k, 2);
+    double Time_ord = omp_get_wtime() - Tstart_ord;
+    printf("Time %lf\n", Time_ord);
 
     free(current);
     free(next);
@@ -169,44 +173,44 @@ void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name,
 
 void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps){
     for(int n_step=0; n_step < n_steps; n_step++){
-        int nthreads;
-        #pragma omp parallel
-        {
-          int myid = omp_get_thread_num();
-          #pragma omp master
-            nthreads = omp_get_num_threads();
-        
-          #pragma omp for
-          for(int i=1;i<k+1;i++){
-            //printf("I am thread %d doing row %d\n", myid, i);
-            for(int j=0; j<k;j++){
-                int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
-                    current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
-                    current[(i-1)*k + j] + current[(i+1)*k + j];
-                next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
-            }
-          }
-          // Here there is an implicit barrier of the for loop
-
-          #pragma omp single nowait
-          for (int i = 0; i < k; i++){
-              next[i] = next[(k)*k + i];
-          }
-
-          #pragma omp single nowait
-          for (int i = 0; i < k; i++){
-              next[(k+1)*k+i]=next[k+i];
+      int nthreads;
+      #pragma omp parallel
+      {
+        int myid = omp_get_thread_num();
+        #pragma omp master
+          nthreads = omp_get_num_threads();
+      
+        #pragma omp for
+        for(int i=1;i<k+1;i++){
+          //printf("I am thread %d doing row %d\n", myid, i);
+          for(int j=0; j<k;j++){
+            int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                current[(i-1)*k + j] + current[(i+1)*k + j];
+            next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
           }
         }
-        // Here there is an implicit barrier for the end of the parallel region.
+        // Here there is an implicit barrier of the for loop
 
-        unsigned char* tmp;
-        tmp = next;
-        next = current;
-        current=tmp;
+        #pragma omp single nowait
+        for (int i = 0; i < k; i++){
+          next[i] = next[(k)*k + i];
+        }
 
-        //printf("Step %d:\n", n_step+1);
-        //print_image(current, k+2,k);
+        #pragma omp single nowait
+        for (int i = 0; i < k; i++){
+          next[(k+1)*k+i]=next[k+i];
+        }
+      }
+      // Here there is an implicit barrier for the end of the parallel region.
+
+      unsigned char* tmp;
+      tmp = next;
+      next = current;
+      current=tmp;
+
+      //printf("Step %d:\n", n_step+1);
+      //print_image(current, k+2,k);
     }
 
 }
@@ -369,33 +373,45 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
 
 }
 
-void evolve_dynamic(unsigned char* current, int k, int n_steps){
-    for(int n_step=0; n_step < n_steps; n_step++){
+void evolve_ordered_OMP(unsigned char* current, int k, int n_steps){
+  for(int n_step=0; n_step < n_steps; n_step++){
+    int nthreads;
+    #pragma omp parallel
+    {
+      int myid = omp_get_thread_num();
+      #pragma omp master
+        nthreads = omp_get_num_threads();
         
-        for(int i=1;i<k;i++){
-            for(int j=0; j<k;j++){
-                int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
-                    current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
-                    current[(i-1)*k + j] + current[(i+1)*k + j];
-                current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
-            }
+      #pragma omp for ordered
+      for(int i=1;i<k;i++){
+        for(int j=0; j<k;j++){
+          printf("I am thread %d and I am updating element (%d,%d)\n", myid,i,j);
+          int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+              current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+              current[(i-1)*k + j] + current[(i+1)*k + j];
+          current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
         }
-        // Update bottom row of frame
-        for(int j=0;j<k;j++){
-            current[(k+1)*k+j] = current[k+j];
-        }
+      }
 
-        // Update last inner row of current and upper row of frame
-        for(int j = 0; j< k; j++){
-            int i = k;
-            int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
-                    current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
-                    current[(i-1)*k + j] + current[(i+1)*k + j];
-            current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
-            // Frame
-            current[j] = current[i*k+j];
-        }
-        printf("Step %d of dynamic:\n", n_step);
-        print_image(current, k+2,k);
+      // Update bottom row of frame
+      #pragma omp for ordered
+      for(int j=0;j<k;j++){
+        current[(k+1)*k+j] = current[k+j];
+      }
+
+      // Update last inner row of current and upper row of frame
+      #pragma omp for ordered
+      for(int j = 0; j< k; j++){
+        int i = k;
+        int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                current[(i-1)*k + j] + current[(i+1)*k + j];
+        current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
+        // Frame
+        current[j] = current[i*k+j];
+      }
     }
+    printf("Step %d of dynamic:\n", n_step);
+    print_image(current, k+2,k);
+  }
 }
