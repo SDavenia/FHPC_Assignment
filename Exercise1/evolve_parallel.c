@@ -479,6 +479,7 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
       // Lower row receive
       MPI_Recv(current + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1+n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
+    /*
     if(n_step == 50){
       FILE* prova_file;
       char nome_file[] = "prova_read3.txt";
@@ -546,7 +547,9 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
         fclose(prova_file);
       }
     }
+    */
     
     // MPI_Waitall(2, request, MPI_STATUS_IGNORE);
   }
 }
+
