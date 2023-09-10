@@ -45,16 +45,17 @@ int main(int argc, char* argv[]){
 
 
     //if(e == 0){ // Ordered
-    //printf("ORDERED EXECUTION\n");
-    //evolve_dynamic(current, k, 2);
+    printf("ORDERED EXECUTION\n");
+    evolve_dynamic(current, k, 1);
     //}else{ // Static
-    printf("STATIC EXECUTION\n");
-    unsigned char* next = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
-    printf("Allocated memory for next using malloc\n");
+    //printf("STATIC EXECUTION\n");
+    //unsigned char* next = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
+    //printf("Allocated memory for next using malloc\n");
 
-    evolve_static(current, next, k, 100);
-    printf("Finished static evolution\n");
-    free(next);
+    //evolve_static(current, next, k, 100);
+    //printf("Finished static evolution\n");
+    free(current);
+    //free(next);
     //}
 
     return 0;
@@ -218,7 +219,9 @@ void evolve_dynamic(unsigned char* current, int k, int n_steps){
             // Frame
             current[j] = current[i*k+j];
         }
-        printf("Step %d of dynamic:\n", n_step);
-        print_image(current, k+2,k);
+        if(n_step==0){
+          printf("Step %d of dynamic:\n", n_step);
+          print_image(current, k+2,k);
+        }
     }
 }

@@ -21,6 +21,7 @@ void initialize_current(unsigned char* input, unsigned char* current, int k);
 void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps);
 void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read);
 void evolve_ordered_OMP(unsigned char* current, int k, int n_steps);
+void evolve_ordered_MPI(unsigned char* current, int k, int n_steps);
 
 void print_image(unsigned char* ptr, int nrow, int ncol){
     for(int i = 0; i < nrow; i++){
@@ -36,7 +37,7 @@ int main(int argc, char* argv[]){
     int xsize;
     int ysize;
     int maxval;
-    char fname[] = "init.pgm";
+    char fname[] = "init_20000.pgm";
     int k;
     if(argc > 1)
       k = atoi(argv[1]);
@@ -64,7 +65,7 @@ int main(int argc, char* argv[]){
     printf("Time %lf\n", Time_stat);
     */
     double Tstart_ord = omp_get_wtime();
-    evolve_ordered_OMP(current, k, 2);
+    evolve_ordered_OMP(current, k, 10);
     double Time_ord = omp_get_wtime() - Tstart_ord;
     printf("Time %lf\n", Time_ord);
 
@@ -375,6 +376,11 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
 
 void evolve_ordered_OMP(unsigned char* current, int k, int n_steps){
   for(int n_step=0; n_step < n_steps; n_step++){
+    /*
+    FILE* prova_file;
+    char nome_file[] = "prova_file.txt";
+    prova_file=fopen(nome_file, "w");
+    */
     int nthreads;
     #pragma omp parallel
     {
@@ -385,16 +391,19 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps){
       #pragma omp for ordered
       for(int i=1;i<k;i++){
         for(int j=0; j<k;j++){
-          printf("I am thread %d and I am updating element (%d,%d)\n", myid,i,j);
-          int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
-              current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
-              current[(i-1)*k + j] + current[(i+1)*k + j];
-          current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
+          #pragma omp ordered
+          {
+            // fprintf(prova_file,"I am thread %d and I am updating element (%d,%d)\n", myid,i,j);
+            int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+            current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+            current[(i-1)*k + j] + current[(i+1)*k + j];
+            current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
+          }
         }
       }
 
-      // Update bottom row of frame
-      #pragma omp for ordered
+      // Update bottom row of frame: since we are only copying no need for ordered
+      #pragma omp for
       for(int j=0;j<k;j++){
         current[(k+1)*k+j] = current[k+j];
       }
@@ -402,16 +411,106 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps){
       // Update last inner row of current and upper row of frame
       #pragma omp for ordered
       for(int j = 0; j< k; j++){
-        int i = k;
-        int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+        #pragma omp ordered
+        {
+          int i = k;
+          int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                 current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
                 current[(i-1)*k + j] + current[(i+1)*k + j];
-        current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
-        // Frame
-        current[j] = current[i*k+j];
+          current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
+          // Frame
+          current[j] = current[i*k+j];
+        }
       }
     }
-    printf("Step %d of dynamic:\n", n_step);
-    print_image(current, k+2,k);
+  }
+}
+
+void evolve_ordered_MPI(unsigned char* current, int k, int n_steps){
+  MPI_Request request;
+  for(int n_step=0; n_step < n_steps; n_step++){
+    /*
+    FILE* prova_file;
+    char nome_file[] = "prova_file.txt";
+    prova_file=fopen(nome_file, "w");
+    */
+
+    // All processes wait until they have the current status of the matrix to update.
+    if(rank != 0) // Upper row receive
+      MPI_Recv(next, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    if(rank == size -1)  // Lower row receive
+      MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, 0+n_step+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    // Evolve parallel using openMP
+    int nthreads;
+    #pragma omp parallel
+    {
+      int myid = omp_get_thread_num();
+      #pragma omp master
+        nthreads = omp_get_num_threads();
+        
+      #pragma omp for ordered
+      for(int i=1;i<k;i++){
+        for(int j=0; j<k;j++){
+          #pragma omp ordered
+          {
+            // fprintf(prova_file,"I am thread %d and I am updating element (%d,%d)\n", myid,i,j);
+            int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+            current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+            current[(i-1)*k + j] + current[(i+1)*k + j];
+            current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
+          }
+        }
+      }
+
+      // Update bottom row of frame: since we are only copying no need for ordered
+      #pragma omp for
+      for(int j=0;j<k;j++){
+        current[(k+1)*k+j] = current[k+j];
+      }
+
+      // Update last inner row of current and upper row of frame
+      #pragma omp for ordered
+      for(int j = 0; j< k; j++){
+        #pragma omp ordered
+        {
+          int i = k;
+          int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                current[(i-1)*k + j] + current[(i+1)*k + j];
+          current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
+          // Frame
+          current[j] = current[i*k+j];
+        }
+      }
+    }
+    if(rank == 0){ // TAG IS ALWAYS THE RANK OF THE SENDING PROCESS + n_step
+      // Send message to last process
+      MPI_Isend(next+k, k, MPI_UNSIGNED_CHAR, size-1, rank + n_step + 1, MPI_COMM_WORLD, &request[0]);
+      // Send message to the next process
+      MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
+      
+      // Blocking receive message
+      // Upper row receive
+      MPI_Recv(next, k, MPI_UNSIGNED_CHAR, size-1, size-1 + n_step + 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      // Lower row receive
+      MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+    }else if(rank == size-1){
+      // Send message to process before
+      MPI_Isend(next+k, k, MPI_UNSIGNED_CHAR, rank-1, rank + n_step, MPI_COMM_WORLD, &request[0]);
+      // Send message to process 0
+      MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, rank + n_step +1 , MPI_COMM_WORLD, &request[1]);
+    }else{
+      // Send message to process before
+      MPI_Isend(next+k, k, MPI_UNSIGNED_CHAR, rank-1, rank + n_step, MPI_COMM_WORLD, &request[0]);
+      // Send message to process after
+      MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
+      
+      // BLOCKING RECEIVE
+      // Lower row receive
+      MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1+n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+    // MPI_Waitall(2, request, MPI_STATUS_IGNORE);
   }
 }
