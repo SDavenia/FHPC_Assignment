@@ -65,8 +65,8 @@ int main(int argc, char* argv[]){
     printf("Time %lf\n", Time_stat);
     */
     //double Tstart_ord = omp_get_wtime();
-    evolve_ordered_OMP(current, k, 50);
-    evolve_ordered_MPI(current, k, 50, rank, size, rows_read);
+    //evolve_ordered_OMP(current, k, 51);
+    evolve_ordered_MPI(current, k, 51, rank, size, rows_read);
     //double Time_ord = omp_get_wtime() - Tstart_ord;
     //printf("Time %lf\n", Time_ord);
 
@@ -76,9 +76,6 @@ int main(int argc, char* argv[]){
 
     return 0;
 }
-
-
-
 
 void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name, int rank, int size, int rows_read){
   /*
@@ -413,18 +410,16 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps){
         }
       }
     }
-    if(n_step == 0)
+    if(n_step == 50){
+      printf("Step %d of OMP\n", n_step);
       print_image(current, k+2, k);
+    }
   }
 }
 
 void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read){
   MPI_Request request[2];
   for(int n_step=0; n_step < n_steps; n_step++){
-  
-    FILE* prova_file;
-    char nome_file[] = "prova_file.txt";
-    prova_file=fopen(nome_file, "w");
 
     // All processes wait until they have the current status of the matrix to update.
     if(rank != 0){ // Upper row receive
@@ -484,9 +479,9 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
       // Lower row receive
       MPI_Recv(current + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1+n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
-    if(n_step == 0){
+    if(n_step == 50){
       FILE* prova_file;
-      char nome_file[] = "prova_read.txt";
+      char nome_file[] = "prova_read3.txt";
       if(n_step==0){
         if(rank==0){
           prova_file = fopen(nome_file, "w");
