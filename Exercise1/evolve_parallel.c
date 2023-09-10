@@ -548,7 +548,7 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
       }
     }
     */
-    
+    MPI_Barrier(MPI_COMM_WORLD);
     // MPI_Waitall(2, request, MPI_STATUS_IGNORE);
   }
 }

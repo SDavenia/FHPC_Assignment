@@ -679,10 +679,11 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
     if(rank != 0){ // Upper row receive
       MPI_Recv(current, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
-      
+
     if(rank == size -1){   // Lower row receive
       MPI_Recv(current + k + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, 0+n_step+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
+    
 
     // Evolve parallel using openMP
     int nthreads;
@@ -804,6 +805,7 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
     */
     
     // MPI_Waitall(2, request, MPI_STATUS_IGNORE);
+    MPI_Barrier(MPI_COMM_WORLD);
   }
 }
 
