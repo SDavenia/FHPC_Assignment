@@ -1,7 +1,7 @@
 // FINAL VERSION OF THE OPTIMIZED MAIN (parallel)
 // To compile: srun mpicc -fopenmp main_parallel.c -o main_parallel.exe
-// To run executable to generate playground: srun ./main_parallel.exe -i -k 5 -f init.pgm
-// To run execubtable to play on playground: srun ./main_parallel.exe -r -k 5 -f init.pgm -n 3
+// To run executable to generate playground: mpirun -n 4 --map-by socket ./main_parallel.exe -i -k 5 -f init.pgm
+// To run execubtable to play on playground: mpirun -n 4 --map-by socket ./main_parallel.exe -r -k 5 -e 1 -f init.pgm -n 5 -s 1
 
 /*
   This code is an update on main_parallel_old.
@@ -58,15 +58,15 @@ void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name,
 
 // To evolve static: evolve_static is a wrapper which decides whether to call OMP or MPI version.
 //                   this is because MPI version does not work unless we have at least 2 processes (otherwise no messages to receive).
-void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read);
-void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps);
-void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read);
+void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read, int s);
+void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps, int s);
+void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read, int s);
 
 // To evolve ordered: evolve_ordered is a wrapper which decides whether to call OMP or MPI version.
 //                   this is because MPI version does not work unless we have at least 2 processes (otherwise no messages to receive).
-void evolve_ordered(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read);
-void evolve_ordered_OMP(unsigned char* current, int k, int n_steps);
-void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read);
+void evolve_ordered(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read, int s);
+void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s);
+void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read, int s);
 
 int main ( int argc, char **argv )
 {
@@ -136,13 +136,13 @@ int main ( int argc, char **argv )
     if(e == 0){ // Ordered
       printf("ORDERED EXECUTION\n");
       double Tstart_ord = omp_get_wtime();
-      evolve_ordered(current, k, n, rank, size, rows_read);
+      evolve_ordered(current, k, n, rank, size, rows_read, s);
       double Time_ord = omp_get_wtime() - Tstart_ord;
       printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_ord);
     }else{ 
       printf("STATIC EXECUTION\n");
       double Tstart_init = omp_get_wtime();
-      evolve_static(current, next, k, n, rank, size, rows_read); 
+      evolve_static(current, next, k, n, rank, size, rows_read, s); 
       double Time_init = omp_get_wtime() - Tstart_init;
       printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_init);
     }
@@ -174,7 +174,7 @@ void initialize_parallel(int k, char *fname){
   int rank, size;
   MPI_Init( NULL, NULL );
   MPI_Comm_rank( MPI_COMM_WORLD,&rank );
-  MPI_Comm_size( MPI_COMM_WORLD,&size );  
+  MPI_Comm_size( MPI_COMM_WORLD,&size );
 
   // Defines how many rows each process has to initialise
   int rows_initialize = (rank < k%size) ? (k / size + 1) : (k / size);
@@ -395,15 +395,14 @@ void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name,
     
 }
 
-void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read){
+void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read, int s){
   if(size == 1)
-    evolve_static_OMP(current, next, k, n_steps);
+    evolve_static_OMP(current, next, k, n_steps, s);
   else
-    evolve_static_MPI(current, next,k , n_steps, rank, size, rows_read);
+    evolve_static_MPI(current, next,k , n_steps, rank, size, rows_read, s);
 }
 
-void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read){
-  
+void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read, int s){
   MPI_Request request[2]; // Array of MPI_Request, necessary to ensure that the non blocking receive is complete
 
   for(int n_step=0; n_step < n_steps; n_step++){
@@ -487,7 +486,7 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
 
       /*
       // Questa parte serve solo a controllare
-      if(n_step == 50){
+      if(n_step == 0){
         FILE* prova_file;
         char nome_file[] = "prova_read.txt";
         if(n_step==0){
@@ -558,62 +557,79 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
 
       //printf("Step %d:\n", n_step+1);
       //print_image(current, k+2,k);
+    if(n_step % s == 0){
+      char file_path[45] = "images/evolve_static/"; // Sufficiently large
+      char filename[20];
+      
+      snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
+      strcat(file_path, filename);
+      write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
+    }
   }
 
 }
 
-void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps){
+void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps, int s){
     for(int n_step=0; n_step < n_steps; n_step++){
-        int nthreads;
-        #pragma omp parallel
-        {
-          int myid = omp_get_thread_num();
-          #pragma omp master
-            nthreads = omp_get_num_threads();
-        
-          #pragma omp for
-          for(int i=1;i<k+1;i++){
-            //printf("I am thread %d doing row %d\n", myid, i);
-            for(int j=0; j<k;j++){
-                int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
-                    current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
-                    current[(i-1)*k + j] + current[(i+1)*k + j];
-                next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
-            }
-          }
-          // Here there is an implicit barrier of the for loop
-
-          #pragma omp single nowait
-          for (int i = 0; i < k; i++){
-              next[i] = next[(k)*k + i];
-          }
-
-          #pragma omp single nowait
-          for (int i = 0; i < k; i++){
-              next[(k+1)*k+i]=next[k+i];
+      int nthreads;
+      #pragma omp parallel
+      {
+        int myid = omp_get_thread_num();
+        #pragma omp master
+          nthreads = omp_get_num_threads();
+      
+        #pragma omp for
+        for(int i=1;i<k+1;i++){
+          //printf("I am thread %d doing row %d\n", myid, i);
+          for(int j=0; j<k;j++){
+              int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                  current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                  current[(i-1)*k + j] + current[(i+1)*k + j];
+              next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
           }
         }
-        // Here there is an implicit barrier for the end of the parallel region.
+        // Here there is an implicit barrier of the for loop
 
-        unsigned char* tmp;
-        tmp = next;
-        next = current;
-        current=tmp;
+        #pragma omp single nowait
+        for (int i = 0; i < k; i++){
+            next[i] = next[(k)*k + i];
+        }
 
-        //printf("Step %d:\n", n_step+1);
-        //print_image(current, k+2,k);
+        #pragma omp single nowait
+        for (int i = 0; i < k; i++){
+            next[(k+1)*k+i]=next[k+i];
+        }
+      }
+      // Here there is an implicit barrier for the end of the parallel region.
+
+      unsigned char* tmp;
+      tmp = next;
+      next = current;
+      current=tmp;
+
+      //printf("Step %d:\n", n_step+1);
+      //print_image(current, k+2,k);
+      if(n_step % s == 0){
+      char file_path[45] = "images/evolve_static/"; // Sufficiently large
+      char filename[20];
+      
+      snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
+      strcat(file_path, filename);
+      write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
+      }
+    
     }
 
 }
 
-void evolve_ordered(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read){
+void evolve_ordered(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read, int s){
   if(size == 1)
-    evolve_ordered_OMP(current, k, n_steps);
+    evolve_ordered_OMP(current, k, n_steps, s);
   else
-    evolve_ordered_MPI(current, k, n_steps, rank, size, rows_read);
+    evolve_ordered_MPI(current, k, n_steps, rank, size, rows_read, s);
 }
 
-void evolve_ordered_OMP(unsigned char* current, int k, int n_steps){
+void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
   for(int n_step=0; n_step < n_steps; n_step++){
     /*
     FILE* prova_file;
@@ -662,6 +678,14 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps){
         }
       }
     }
+    if(n_step % s == 0){
+      char file_path[45] = "images/evolve_ordered/"; // Sufficiently large
+      char filename[20];
+      
+      snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
+      strcat(file_path, filename);
+      write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
+    }
     /*
     if(n_step == 50){
       printf("Step %d of OMP\n", n_step);
@@ -671,7 +695,7 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps){
   }
 }
 
-void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read){
+void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, int size, int rows_read, int s){
   MPI_Request request[2];
   for(int n_step=0; n_step < n_steps; n_step++){
 
@@ -806,6 +830,14 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
     
     // MPI_Waitall(2, request, MPI_STATUS_IGNORE);
     MPI_Barrier(MPI_COMM_WORLD);
+    if(n_step % s == 0){
+      char file_path[45] = "images/evolve_ordered/"; // Sufficiently large
+      char filename[20];
+      
+      snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
+      strcat(file_path, filename);
+      write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
+    }
   }
 }
 
