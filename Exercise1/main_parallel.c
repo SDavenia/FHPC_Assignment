@@ -1,7 +1,7 @@
 // FINAL VERSION OF THE OPTIMIZED MAIN (parallel)
 // To compile: srun mpicc -fopenmp main_parallel.c -o main_parallel.exe
-// To run executable to generate playground: mpirun -n 4 --map-by socket ./main_parallel.exe -i -k 5 -f init.pgm
-// To run execubtable to play on playground: mpirun -n 4 --map-by socket ./main_parallel.exe -r -k 5 -e 1 -f init.pgm -n 5 -s 1
+// To run executable to generate playground: mpirun -n 4 --map-by socket ./main_parallel.exe -i -k 5 -f init_00005.pgm
+// To run execubtable to play on playground: mpirun -n 4 --map-by socket ./main_parallel.exe -r -k 5 -e 1 -f init_00005.pgm -n 5 -s 1
 
 /*
   This code is an update on main_parallel_old.
@@ -109,11 +109,16 @@ int main ( int argc, char **argv )
     }
   }
 
+  // Where the initial matrices are stored 
+  char *file_path = (char*)malloc( sizeof(optarg)+ 1 +30);
+  strcpy(file_path,"images/initial_matrices/");
+  strcat(file_path,fname);
+
   // 2- Depending on whether initialisation or execution is required, perform it.
   if(action == INIT){
     // create initial conditions
     //double Tstart_init = omp_get_wtime();
-    initialize_parallel(k,fname);
+    initialize_parallel(k,file_path);
     //double Time_init = omp_get_wtime() - Tstart_init;
     //printf("write time : %lf\n", Time_init);
   }else{ 
@@ -128,7 +133,7 @@ int main ( int argc, char **argv )
     
     // Read and run a playground
     unsigned char* current;
-    read_pgm_parallel_frame(&current, k, fname, rank, size, rows_read);
+    read_pgm_parallel_frame(&current, k, file_path, rank, size, rows_read);
 
     unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
 
@@ -155,6 +160,7 @@ int main ( int argc, char **argv )
 
     MPI_Finalize();
   }
+  free(file_path);
 
 
   return 0;
@@ -251,6 +257,7 @@ void initialize_parallel(int k, char *fname){
   write_pgm_parallel(ptr, 255, k, k, fname, rank, size, rows_initialize);
 
   free(ptr);
+
   MPI_Finalize();
 }
 
@@ -615,7 +622,7 @@ void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n
       
       snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
       strcat(file_path, filename);
-      write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
+      write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
       }
     
     }
@@ -684,7 +691,7 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
       
       snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
       strcat(file_path, filename);
-      write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
+      write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
     }
     /*
     if(n_step == 50){
