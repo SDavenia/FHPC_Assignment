@@ -705,12 +705,13 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
   for(int n_step=0; n_step < n_steps; n_step++){
 
     // All processes wait until they have the current status of the matrix to update.
-    if(rank != 0){ // Upper row receive
-      MPI_Recv(current, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
 
     if(rank == size -1){   // Lower row receive
       MPI_Recv(current + k + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, 0+n_step+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    }
+
+    if(rank != 0){ // Upper row receive
+      MPI_Recv(current, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
     
 
@@ -735,29 +736,30 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
           }
         }
       }
-    }
+    } // Implicit barrier at the end of parallel region
+
     if(rank == 0){ // TAG IS ALWAYS THE RANK OF THE SENDING PROCESS + n_step
-      // Send message to last process
-      MPI_Isend(current+k, k, MPI_UNSIGNED_CHAR, size-1, rank + n_step + 1, MPI_COMM_WORLD, &request[0]);
       // Send message to the next process
       MPI_Isend(current + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
+      // Send message to last process
+      MPI_Isend(current+k, k, MPI_UNSIGNED_CHAR, size-1, rank + n_step + 1, MPI_COMM_WORLD, &request[0]);
       
       // Blocking receive message
-      // Upper row receive
-      MPI_Recv(current, k, MPI_UNSIGNED_CHAR, size-1, size-1 + n_step + 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       // Lower row receive
       MPI_Recv(current + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      // Upper row receive
+      MPI_Recv(current, k, MPI_UNSIGNED_CHAR, size-1, size-1 + n_step + 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
     }else if(rank == size-1){
-      // Send message to process before
-      MPI_Isend(current+k, k, MPI_UNSIGNED_CHAR, rank-1, rank + n_step, MPI_COMM_WORLD, &request[0]);
       // Send message to process 0
       MPI_Isend(current + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, rank + n_step +1 , MPI_COMM_WORLD, &request[1]);
-    }else{
       // Send message to process before
       MPI_Isend(current+k, k, MPI_UNSIGNED_CHAR, rank-1, rank + n_step, MPI_COMM_WORLD, &request[0]);
+    }else{
       // Send message to process after
       MPI_Isend(current + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
+      // Send message to process before
+      MPI_Isend(current+k, k, MPI_UNSIGNED_CHAR, rank-1, rank + n_step, MPI_COMM_WORLD, &request[0]);
       
       // BLOCKING RECEIVE
       // Lower row receive
