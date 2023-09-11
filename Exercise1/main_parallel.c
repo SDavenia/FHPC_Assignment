@@ -47,7 +47,7 @@ void print_image(unsigned char* ptr, int nrow, int ncol){
 
 // Here we report the functions which are used to generate the image, write to a pgm file, and read from a pgm file respectively
 // To initialize and write the matrix
-void initialize_parallel(int k, char *fname);
+void initialize_parallel(int k, char *fname, int rank, int size, int rows_initialize);
 void write_pgm_parallel(unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize);
 
 // To read matrix from file
@@ -111,22 +111,23 @@ int main ( int argc, char **argv )
   strcpy(file_path,"images/initial_matrices/");
   strcat(file_path,fname);
 
+  int rank, size;
+  MPI_Init( NULL, NULL );
+  MPI_Comm_rank( MPI_COMM_WORLD,&rank );
+  MPI_Comm_size( MPI_COMM_WORLD,&size );
+
+  // Defines how many rows each process has to initialise
+  int rows_read = k / size; 
+  rows_read = (rank < k % size) ? rows_read+1 : rows_read;
+
   // 2- Depending on whether initialisation or execution is required, perform it.
   if(action == INIT){
     // create initial conditions
     //double Tstart_init = omp_get_wtime();
-    initialize_parallel(k,file_path);
+    initialize_parallel(k,file_path, rank, size, rows_read);
     //double Time_init = omp_get_wtime() - Tstart_init;
     //printf("write time : %lf\n", Time_init);
   }else{ 
-    int rank, size;
-    MPI_Init( NULL, NULL );
-    MPI_Comm_rank( MPI_COMM_WORLD,&rank );
-    MPI_Comm_size( MPI_COMM_WORLD,&size );
-
-    // Defines how many rows each process has to initialise
-    int rows_read = k / size; 
-    rows_read = (rank < k % size) ? rows_read+1 : rows_read;
     
     // Read and run a playground
     unsigned char* current;
@@ -158,16 +159,15 @@ int main ( int argc, char **argv )
       free(fname);
     free(next);
     free(current);
-
-    MPI_Finalize();
   }
   free(file_path);
+  MPI_Finalize();
 
 
   return 0;
 }
 
-void initialize_parallel(int k, char *fname){
+void initialize_parallel(int k, char *fname, int rank, int size, int rows_initialize){
   /*
   INPUT:
     - k: the size of the square where we want to execute GOL.
@@ -178,13 +178,15 @@ void initialize_parallel(int k, char *fname){
   
   2. It writes the random matrix to file called fname.
   */
+
+ /*
   int rank, size;
   MPI_Init( NULL, NULL );
   MPI_Comm_rank( MPI_COMM_WORLD,&rank );
   MPI_Comm_size( MPI_COMM_WORLD,&size );
 
   // Defines how many rows each process has to initialise
-  int rows_initialize = (rank < k%size) ? (k / size + 1) : (k / size);
+  int rows_initialize = (rank < k%size) ? (k / size + 1) : (k / size);*/
   
   MPI_File fh;
   MPI_Offset disp;
@@ -253,13 +255,10 @@ void initialize_parallel(int k, char *fname){
   fprintf(prova_file, "\n");
   */
   
-
   // Write to file.
   write_pgm_parallel(ptr, 255, k, k, fname, rank, size, rows_initialize);
 
   free(ptr);
-
-  MPI_Finalize();
 }
 
 void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize){
@@ -408,6 +407,59 @@ void evolve_static(unsigned char* current, unsigned char* next, int k, int n_ste
     evolve_static_OMP(current, next, k, n_steps, s);
   else
     evolve_static_MPI(current, next,k , n_steps, rank, size, rows_read, s);
+}
+
+void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps, int s){
+    for(int n_step=0; n_step < n_steps; n_step++){
+      int nthreads;
+      #pragma omp parallel
+      {
+        int myid = omp_get_thread_num();
+        #pragma omp master
+          nthreads = omp_get_num_threads();
+      
+        #pragma omp for
+        for(int i=1;i<k+1;i++){
+          //printf("I am thread %d doing row %d\n", myid, i);
+          for(int j=0; j<k;j++){
+              int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                  current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                  current[(i-1)*k + j] + current[(i+1)*k + j];
+              next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
+          }
+        }
+        // Here there is an implicit barrier of the for loop
+
+        #pragma omp single nowait
+        for (int i = 0; i < k; i++){
+            next[i] = next[(k)*k + i];
+        }
+
+        #pragma omp single nowait
+        for (int i = 0; i < k; i++){
+            next[(k+1)*k+i]=next[k+i];
+        }
+      }
+      // Here there is an implicit barrier for the end of the parallel region.
+
+      unsigned char* tmp;
+      tmp = next;
+      next = current;
+      current=tmp;
+
+      //printf("Step %d:\n", n_step+1);
+      //print_image(current, k+2,k);
+      if((n_step+1) % s == 0){
+        char file_path[45] = "images/evolve_static/"; // Sufficiently large
+        char filename[20];
+        
+        snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
+        strcat(file_path, filename);
+        write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
+      }
+    
+    }
+
 }
 
 void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read, int s){
@@ -572,59 +624,6 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
       write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
     }
   }
-
-}
-
-void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n_steps, int s){
-    for(int n_step=0; n_step < n_steps; n_step++){
-      int nthreads;
-      #pragma omp parallel
-      {
-        int myid = omp_get_thread_num();
-        #pragma omp master
-          nthreads = omp_get_num_threads();
-      
-        #pragma omp for
-        for(int i=1;i<k+1;i++){
-          //printf("I am thread %d doing row %d\n", myid, i);
-          for(int j=0; j<k;j++){
-              int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
-                  current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
-                  current[(i-1)*k + j] + current[(i+1)*k + j];
-              next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
-          }
-        }
-        // Here there is an implicit barrier of the for loop
-
-        #pragma omp single nowait
-        for (int i = 0; i < k; i++){
-            next[i] = next[(k)*k + i];
-        }
-
-        #pragma omp single nowait
-        for (int i = 0; i < k; i++){
-            next[(k+1)*k+i]=next[k+i];
-        }
-      }
-      // Here there is an implicit barrier for the end of the parallel region.
-
-      unsigned char* tmp;
-      tmp = next;
-      next = current;
-      current=tmp;
-
-      //printf("Step %d:\n", n_step+1);
-      //print_image(current, k+2,k);
-      if((n_step+1) % s == 0){
-        char file_path[45] = "images/evolve_static/"; // Sufficiently large
-        char filename[20];
-        
-        snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
-        strcat(file_path, filename);
-        write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
-      }
-    
-    }
 
 }
 

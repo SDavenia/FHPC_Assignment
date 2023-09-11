@@ -390,7 +390,7 @@ void evolve_ordered(unsigned char* current, int k, int n_steps){
             current[j] = current[i*k+j];
         }
         if(n_step==0){
-          printf("Step %d of dynamic:\n", n_step);
+          printf("Step %d of ordered:\n", n_step);
           print_image(current, k+2,k);
         }
     }
