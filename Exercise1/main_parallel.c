@@ -146,10 +146,10 @@ int main ( int argc, char **argv )
       printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_ord);
     }else{ 
       printf("STATIC EXECUTION\n");
-      double Tstart_init = omp_get_wtime();
+      double Tstart_static = omp_get_wtime();
       evolve_static(current, next, k, n, rank, size, rows_read, s); 
-      double Time_init = omp_get_wtime() - Tstart_init;
-      printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_init);
+      double Time_static = omp_get_wtime() - Tstart_static;
+      printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_static);
     }
     
     
@@ -452,10 +452,10 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
         MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
         
         // Blocking receive message
-        // Upper row receive
-        MPI_Recv(next, k, MPI_UNSIGNED_CHAR, size-1, size-1 + n_step + 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         // Lower row receive
         MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // Upper row receive from final process
+        MPI_Recv(next, k, MPI_UNSIGNED_CHAR, size-1, size-1 + n_step + 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
       }else if(rank == size-1){
         // Send message to process before
@@ -463,13 +463,11 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
         // Send message to process 0
         MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, rank + n_step +1 , MPI_COMM_WORLD, &request[1]);
         
-        // int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
-        //   MPI_Comm comm, MPI_Status *status)
         // BLOCKING RECEIVE
-        // Upper row receive
-        MPI_Recv(next, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         // Lower row receive
         MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, 0+n_step+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        // Upper row receive
+        MPI_Recv(next, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       }else{
         // Send message to process before
         MPI_Isend(next+k, k, MPI_UNSIGNED_CHAR, rank-1, rank + n_step, MPI_COMM_WORLD, &request[0]);
@@ -484,7 +482,7 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
         // Lower row receive
         MPI_Recv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1+n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
       }
-      MPI_Waitall(2, request, MPI_STATUS_IGNORE);
+      MPI_Waitall(2, request, MPI_STATUS_IGNORE); // To ensure they all do not alter the buffer by moving to next iteration.
 
       unsigned char* tmp;
       tmp = next;
