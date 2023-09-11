@@ -836,7 +836,7 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
     */
     
     // MPI_Waitall(2, request, MPI_STATUS_IGNORE);
-    MPI_Barrier(MPI_COMM_WORLD);
+    //MPI_Barrier(MPI_COMM_WORLD);
     if(n_step % s == 0){
       char file_path[45] = "images/evolve_ordered/"; // Sufficiently large
       char filename[20];
