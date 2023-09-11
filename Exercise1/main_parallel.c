@@ -36,13 +36,10 @@ int   n      = 10000;
 int   s      = 1;
 char *fname  = NULL;
 
-void print_image(unsigned char* ptr, int k){
-  /*
-  This function is used only in intermediate steps to print to terminal a square matrix with k columns
-  */
-    for(int i = 0; i < k; i++){
-        for(int j = 0; j < k; j++){
-            printf("%d ", ptr[i*k + j]/255);
+void print_image(unsigned char* ptr, int nrow, int ncol){
+    for(int i = 0; i < nrow; i++){
+        for(int j = 0; j < ncol; j++){
+            printf("%d ", ptr[i*ncol + j]/255);
         }
         printf("\n");
     }
@@ -136,14 +133,16 @@ int main ( int argc, char **argv )
     read_pgm_parallel_frame(&current, k, file_path, rank, size, rows_read);
 
     unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
-
+    printf("Initial one:\n");
+    print_image(current, k+2, k);
+    printf("\n");
     
     if(e == 0){ // Ordered
       printf("ORDERED EXECUTION\n");
       double Tstart_ord = omp_get_wtime();
       evolve_ordered(current, k, n, rank, size, rows_read, s);
       double Time_ord = omp_get_wtime() - Tstart_ord;
-      printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_ord);
+      printf("I am process %d and evolving the matrix in ordered way for %d steps took %lf s\n",rank, n, Time_ord);
     }else{ 
       printf("STATIC EXECUTION\n");
       double Tstart_static = omp_get_wtime();
@@ -636,6 +635,7 @@ void evolve_ordered(unsigned char* current, int k, int n_steps, int rank, int si
 
 void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
   for(int n_step=0; n_step < n_steps; n_step++){
+    printf("Iteration %d\n", n_step);
     /*
     FILE* prova_file;
     char nome_file[] = "prova_file.txt";
@@ -684,17 +684,17 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
       }
     }
     if(n_step % s == 0){
+      printf("Step %d of OMP\n", n_step);
+      print_image(current, k+2, k);
+    }
+    /*
+    if(n_step % s == 0){
       char file_path[45] = "images/evolve_ordered/"; // Sufficiently large
       char filename[20];
       
       snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
       strcat(file_path, filename);
       write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
-    }
-    /*
-    if(n_step == 50){
-      printf("Step %d of OMP\n", n_step);
-      print_image(current, k+2, k);
     }
     */
   }
