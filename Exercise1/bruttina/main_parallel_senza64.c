@@ -49,7 +49,7 @@ void print_image(unsigned char* ptr, int k){
 // Here we report the functions which are used to generate the image, write to a pgm file, and read from a pgm file respectively
 void initialize_parallel(int k, char *fname);
 void write_pgm_parallel(unsigned char *ptr, int maxval, int xsize, int ysize, const char *fname, int rank, int size, int rows_initialize);
-void read_pgm_parallel(unsigned char **ptr, int *maxval, int *xsize, int *ysize,int k, const char *image_name);
+void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name);
 void read_pgm_parallel_frame(unsigned char **ptr, int k, const char *image_name);
 
 
@@ -107,10 +107,10 @@ int main ( int argc, char **argv )
     // printf("Run\n");
     unsigned char* input;
     // double Tstart_init = omp_get_wtime();
-    int xsize;
+    /*int xsize;
     int ysize;
-    int maxval;
-    read_pgm_parallel(&input, &maxval, &xsize, &ysize, k,fname);
+    int maxval;*/
+    read_pgm_parallel(&input, k,fname);
     //read_pgm_parallel(&input, k, fname);
     //read_pgm_parallel_frame(&input, k, fname);
     // free(input);
@@ -305,7 +305,7 @@ void write_pgm_parallel( unsigned char *ptr, int maxval, int xsize, int ysize, c
   MPI_File_close(&fh);
 }
 
-void read_pgm_parallel(unsigned char **ptr, int *maxval, int *xsize, int *ysize, int k, const char *image_name){
+void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name){
   /*
   INPUT:
     - ptr: pointer to the memory location where the matrix will be stored
@@ -325,14 +325,11 @@ void read_pgm_parallel(unsigned char **ptr, int *maxval, int *xsize, int *ysize,
     int counter=0;
 
 
-    /*int* xsize;
+    int* xsize;
     int* ysize;
     int* maxval;
-    *xsize = *ysize = *maxval = 0;*/
     *xsize = *ysize = *maxval = 0;
-    printf("xsize is at %p\n",xsize);
-    printf("ysize is at %p\n",ysize);
-    printf("maxval is at %p\n",maxval);
+    //*xsize = *ysize = *maxval = 0;
 
     char    MagicN[2]; // define a string of 2 elements
     char   *line = NULL; //define a pointer "line" to NULL
@@ -354,13 +351,12 @@ void read_pgm_parallel(unsigned char **ptr, int *maxval, int *xsize, int *ysize,
     }
     if (t > 0){
       t = sscanf(line, "%d%*c%d%*c%d%*c", xsize, ysize, maxval);  // This one reads the number
-      printf("Numbers are %d\n",t);
-      counter+=t;
       if ( t < 3 ){
-        printf("Here\n");
-        counter+=fscanf(image_file, "%d%*c", maxval);
-        printf("Here is %d\n",fscanf(image_file, "%d%*c", maxval));
-        counter++;
+        t = getline(&line,&n,image_file);
+        counter+=t;
+        sscanf(line, "%d%*c", maxval);
+        //fscanf(image_file, "%d%*c", maxval);
+        printf("Last line is %d\n",t);
       }
     }else{
       *maxval = -1;         // this is the signal that there was an I/O error
