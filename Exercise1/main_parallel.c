@@ -133,9 +133,11 @@ int main ( int argc, char **argv )
     read_pgm_parallel_frame(&current, k, file_path, rank, size, rows_read);
 
     unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
+    /*
     printf("Initial one:\n");
     print_image(current, k+2, k);
     printf("\n");
+    */
     
     if(e == 0){ // Ordered
       printf("ORDERED EXECUTION\n");
@@ -561,11 +563,11 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
 
       //printf("Step %d:\n", n_step+1);
       //print_image(current, k+2,k);
-    if(n_step % s == 0){
+    if((n_step+1) % s == 0){
       char file_path[45] = "images/evolve_static/"; // Sufficiently large
       char filename[20];
       
-      snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
+      snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
       strcat(file_path, filename);
       write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
     }
@@ -613,13 +615,13 @@ void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n
 
       //printf("Step %d:\n", n_step+1);
       //print_image(current, k+2,k);
-      if(n_step % s == 0){
-      char file_path[45] = "images/evolve_static/"; // Sufficiently large
-      char filename[20];
-      
-      snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
-      strcat(file_path, filename);
-      write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
+      if((n_step+1) % s == 0){
+        char file_path[45] = "images/evolve_static/"; // Sufficiently large
+        char filename[20];
+        
+        snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
+        strcat(file_path, filename);
+        write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
       }
     
     }
@@ -635,7 +637,6 @@ void evolve_ordered(unsigned char* current, int k, int n_steps, int rank, int si
 
 void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
   for(int n_step=0; n_step < n_steps; n_step++){
-    printf("Iteration %d\n", n_step);
     /*
     FILE* prova_file;
     char nome_file[] = "prova_file.txt";
@@ -684,11 +685,11 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
       }
     }
     
-    if(n_step % s == 0){
+    if((n_step+1) % s == 0){
       char file_path[45] = "images/evolve_ordered/"; // Sufficiently large
       char filename[20];
       
-      snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
+      snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
       strcat(file_path, filename);
       write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
     }
@@ -831,12 +832,12 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
     */
     
     // MPI_Waitall(2, request, MPI_STATUS_IGNORE);
-    //MPI_Barrier(MPI_COMM_WORLD);
-    if(n_step % s == 0){
+    // MPI_Barrier(MPI_COMM_WORLD);
+    if((n_step+1) % s == 0){
       char file_path[45] = "images/evolve_ordered/"; // Sufficiently large
       char filename[20];
       
-      snprintf(filename, 20, "snapshot_%05d.pgm", n_step);
+      snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
       strcat(file_path, filename);
       write_pgm_parallel(current+k, 255, k, k, file_path, rank, size, rows_read);
     }
