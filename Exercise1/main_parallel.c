@@ -683,11 +683,7 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
         }
       }
     }
-    if(n_step % s == 0){
-      printf("Step %d of OMP\n", n_step);
-      print_image(current, k+2, k);
-    }
-    /*
+    
     if(n_step % s == 0){
       char file_path[45] = "images/evolve_ordered/"; // Sufficiently large
       char filename[20];
@@ -696,7 +692,6 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
       strcat(file_path, filename);
       write_pgm_parallel(current+k, 255, k, k, file_path, 0, 1, k+2);
     }
-    */
   }
 }
 
