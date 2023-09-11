@@ -324,11 +324,10 @@ void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name){
     image_file = fopen(image_name, "r");
     int counter=0;
 
-
-    int* xsize;
-    int* ysize;
-    int* maxval;
-    *xsize = *ysize = *maxval = 0;
+    int xsize;
+    int ysize;
+    int maxval;
+    xsize = ysize = maxval = 0;
     //*xsize = *ysize = *maxval = 0;
 
     char    MagicN[2]; // define a string of 2 elements
@@ -337,34 +336,28 @@ void read_pgm_parallel(unsigned char **ptr, int k, const char *image_name){
 
     // get the Magic Number
     t = fscanf(image_file, "%2s%*c", MagicN ); // This one reads P5
-    printf("P5 is %d\n",t);
     counter+=3;
 
     // skip all the comments
     t = getline( &line, &n, image_file); // Here we read all the lines starting with #, i.e. all the comments.
-    printf("First line is %d\n",t);
     counter+=t;
     while ( (t > 0) && (line[0]=='#') ){
       t = getline( &line, &n, image_file);
-      printf("Second line is %d\n",t);
       counter+=t;
     }
     if (t > 0){
-      t = sscanf(line, "%d%*c%d%*c%d%*c", xsize, ysize, maxval);  // This one reads the number
+      t = sscanf(line, "%d%*c%d%*c%d%*c", &xsize, &ysize, &maxval);  // This one reads the number
       if ( t < 3 ){
         t = getline(&line,&n,image_file);
         counter+=t;
-        sscanf(line, "%d%*c", maxval);
-        //fscanf(image_file, "%d%*c", maxval);
-        printf("Last line is %d\n",t);
+        sscanf(line, "%d%*c", &maxval);
       }
     }else{
-      *maxval = -1;         // this is the signal that there was an I/O error
+      maxval = -1;         // this is the signal that there was an I/O error
           // while reading the image header
       free( line );
       return;
     }
-    printf("Number of characters is %d\n", counter);
     free(line);
     fclose(image_file);
   }
