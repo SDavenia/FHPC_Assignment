@@ -3,9 +3,10 @@
 #SBATCH --job-name=gemm_first_attempt
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
-#SBATCH --cpus-per-task=64
+#SBATCH --cpus-per-task=128
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
+#SBATCH --exclusive
 #SBATCH --output=size_close.out
 
 module load architecture/AMD
