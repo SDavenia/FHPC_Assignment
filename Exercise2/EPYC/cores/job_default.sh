@@ -6,6 +6,7 @@
 #SBATCH --cpus-per-task=128
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
+#SBATCH --exclusive
 #SBATCH --output=cores_default.out
 
 module load architecture/AMD

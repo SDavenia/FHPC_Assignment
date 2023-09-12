@@ -6,6 +6,7 @@
 #SBATCH --cpus-per-task=128
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
+#SBATCH --exclusive
 #SBATCH --output=cores_default.out
 
 module load architecture/AMD
@@ -18,7 +19,7 @@ srun -n1 make cpu # Now I have all the needed executables.
 
 m_size=10000 # Allocate matrix size
 
-for implem in 'blis'
+for implem in 'oblas'
 do
     for type in 'double' 'float'
     do
