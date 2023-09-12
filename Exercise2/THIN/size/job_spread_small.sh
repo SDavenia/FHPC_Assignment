@@ -23,7 +23,7 @@ export OMP_PROC_BIND=spread
 srun -n1 make cpu # Now I have all the needed executables.
 
 
-for implem in 'oblas' 'mkl' 'blis'
+for implem in 'oblas'
 do
     for type in 'double' 'float'
     do

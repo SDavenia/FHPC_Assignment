@@ -3,12 +3,13 @@
 #SBATCH --job-name=gemm
 #SBATCH --nodes=1 
 #SBATCH --ntasks-per-node=1 
-#SBATCH --cpus-per-task=12
+#SBATCH --cpus-per-task=24
 #SBATCH --mem=200gb 
-#SBATCH --time=02:00:00 
+#SBATCH --time=02:00:00
+#SBATCH --exclusive  
 #SBATCH --output=size_default.out
 
-module load architecture/AMD
+module load architecture/Intel
 module load mkl
 module load openBLAS/0.3.23-omp
 
