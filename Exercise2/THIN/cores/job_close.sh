@@ -6,9 +6,10 @@
 #SBATCH --cpus-per-task=24
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
+#SBATCH --exclusive
 #SBATCH --output=cores_close.out
 
-module load architecture/AMD
+module load architecture/Intel
 module load mkl
 module load openBLAS/0.3.23-omp
 

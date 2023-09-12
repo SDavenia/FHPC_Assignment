@@ -19,7 +19,7 @@ srun -n1 make cpu # Now I have all the needed executables.
 
 m_size=10000 # Allocate matrix size
 
-for implem in 'oblas' 'mkl' 'blis'
+for implem in 'oblas'
 do
     for type in 'double' 'float'
     do
