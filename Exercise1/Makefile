@@ -1,17 +1,21 @@
-CC=g++
+RN=srun
+CC=mpicc -fopenmp 
 
-INCDIR=include
+INCDIR=src
 OBJDIR=src
 
 CFLAGS = -c -I$(INCDIR)
-OBJECTS:= main.o $(patsubst %.cpp,%.o,$(wildcard src/*.cpp))
+OBJECTS:= main_parallel.o $(patsubst %.c,%.o,$(wildcard src/*.c))
 
-output.x: $(OBJECTS)
-	$(CC) $(OBJECTS) -o $@
-main.o: main.cpp
-	$(CC) $(CFLAGS) main.cpp
-$(OBJDIR)/%.o: $(OBJDIR)/%.cpp
-	$(CC) $(CFLAGS) $^ -o $@
+main_parallel.exe: $(OBJECTS)
+	$(RN) $(CC) $(OBJECTS) -o $@
+main_parallel.o: main_parallel.c
+	$(RN) $(CC) $(CFLAGS) main_parallel.c
+$(OBJDIR)/%.o: $(OBJDIR)/%.c
+	$(RN) $(CC) $(CFLAGS) $^ -o $@
 clean:
-	rm -rf *.o *.x
+	rm -rf *.o *.exe
 	rm $(OBJDIR)/*.o
+clean_o:
+	rm $(OBJDIR)/*.o
+	rm -rf *.o
