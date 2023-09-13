@@ -13,7 +13,7 @@ module load architecture/Intel
 module load mkl
 module load openBLAS/0.3.23-omp
 
-export LD_LIBRARY_PATH=/u/dssc/sdaven00/myblis/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/u/dssc/erivar00/myblis/lib:$LD_LIBRARY_PATH
 export OMP_NUM_THREADS=12
 export BLIS_NUM_THREADS=12
 

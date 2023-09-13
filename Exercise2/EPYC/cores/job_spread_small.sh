@@ -13,7 +13,7 @@ module load architecture/AMD
 module load mkl
 module load openBLAS/0.3.23-omp
 
-export LD_LIBRARY_PATH=/u/dssc/sdaven00/myblis/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/u/dssc/erivar00/myblis/lib:$LD_LIBRARY_PATH
 
 export OMP_PLACES=cores
 export OMP_PROC_BIND=spread
@@ -22,7 +22,7 @@ srun -n1 make cpu # Now I have all the needed executables.
 
 m_size=10000
 
-for implem in 'oblas'
+for implem in 'blis'
 do
     for type in 'double' 'float'
     do

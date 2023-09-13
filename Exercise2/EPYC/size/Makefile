@@ -7,7 +7,7 @@ MKL= -L${MKLROOT}/lib/intel64  -lmkl_intel_lp64 -lmkl_gnu_thread -lmkl_core -lgo
 OPENBLASROOT=${OPENBLAS_ROOT}
 
 ### BLIS library
-BLISROOT=/u/dssc/sdaven00/myblis
+BLISROOT=/u/dssc/erivar00/myblis
 
 cpu: gemm_mkl_double.x gemm_oblas_double.x gemm_mkl_float.x gemm_oblas_float.x gemm_blis_double.x gemm_blis_float.x
 

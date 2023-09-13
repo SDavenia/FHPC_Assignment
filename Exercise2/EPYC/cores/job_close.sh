@@ -13,7 +13,7 @@ module load architecture/AMD
 module load mkl
 module load openBLAS/0.3.23-omp
 
-export LD_LIBRARY_PATH=/u/dssc/sdaven00/myblis/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/u/dssc/erivar00/myblis/lib:$LD_LIBRARY_PATH
 
 export OMP_PLACES=cores
 export OMP_PROC_BIND=close
