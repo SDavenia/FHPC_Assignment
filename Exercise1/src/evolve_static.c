@@ -11,6 +11,8 @@
 
 
 void evolve_static(unsigned char* current, unsigned char* next, int k, int n_steps, int rank, int size, int rows_read, int s){
+  if(s == 0)
+    s = n_steps; // To ensure if we call s = 0, only last one is printed. 
   if(size == 1)
     evolve_static_OMP(current, next, k, n_steps, s);
   else

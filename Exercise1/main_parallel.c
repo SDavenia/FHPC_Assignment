@@ -97,20 +97,25 @@ int main ( int argc, char **argv )
   // 2- Depending on whether initialisation or execution is required, perform it.
   if(action == INIT){
     // create initial conditions
-    //double Tstart_init = omp_get_wtime();
+    // Only the master thread takes the time
+    double Tstart_init;
+    if(rank == 0) 
+      Tstart_init = omp_get_wtime();
     initialize_parallel(k,file_path, rank, size, rows_read);
-    //double Time_init = omp_get_wtime() - Tstart_init;
-    //printf("write time : %lf\n", Time_init);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank == 0){
+      double Time_init = omp_get_wtime() - Tstart_init;
+      printf("Initialize time: %lf\n", Time_init);
+    }
   }else{ 
     // Read and run a playground
     unsigned char* current;
-    double Tstart_read = omp_get_wtime();
+    //double Tstart_read = omp_get_wtime();
     //read_pgm_parallel(&current, k, file_path, rank, size, rows_read);
     read_pgm_parallel(&current, k, file_path, rank, size, rows_read);
-    double Time_read = omp_get_wtime() - Tstart_read;
-    printf("I am process %d, Read time : %lf\n", rank, Time_read);
+    //double Time_read = omp_get_wtime() - Tstart_read;
+    //printf("I am process %d, Read time : %lf\n", rank, Time_read);
 
-    unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
     /*
     printf("Initial one:\n");
     print_image(current, k+2, k);
@@ -118,23 +123,32 @@ int main ( int argc, char **argv )
     */
     
     if(e == 0){ // Ordered
-      printf("ORDERED EXECUTION\n");
-      double Tstart_ord = omp_get_wtime();
+      double Tstart_ord;
+      if(rank == 0)
+        Tstart_ord = omp_get_wtime();
       evolve_ordered(current, k, n, rank, size, rows_read, s);
-      double Time_ord = omp_get_wtime() - Tstart_ord;
-      printf("I am process %d and evolving the matrix in ordered way for %d steps took %lf s\n",rank, n, Time_ord);
-    }else{ 
-      printf("STATIC EXECUTION\n");
-      double Tstart_static = omp_get_wtime();
+      MPI_Barrier(MPI_COMM_WORLD);
+      if(rank == 0){
+        double Time_ord = omp_get_wtime() - Tstart_ord;
+        printf("Ordered time: %lf\n", Time_ord);
+      }
+    }else{
+      unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
+      double Tstart_static;
+      if(rank == 0)
+        Tstart_static = omp_get_wtime();
       evolve_static(current, next, k, n, rank, size, rows_read, s); 
-      double Time_static = omp_get_wtime() - Tstart_static;
-      printf("I am process %d and evolving the matrix statically for %d steps took %lf s\n",rank, n, Time_static);
+      MPI_Barrier(MPI_COMM_WORLD);
+      if(rank == 0){
+        double Time_static = omp_get_wtime() - Tstart_static;
+        printf("Static time: %lf\n", Time_static);
+      }
+      free(next);
     }
     
     
     if (fname != NULL)
       free(fname);
-    free(next);
     free(current);
   }
   free(file_path);
