@@ -5,7 +5,7 @@
 #SBATCH --ntasks-per-node=2 
 #SBATCH --cpus-per-task=64
 #SBATCH --mem=200gb 
-#SBATCH --time=02:00:00 
+#SBATCH --time=00:30:00 
 #SBATCH --exclusive
 #SBATCH --output=OMP_Init.out
 
@@ -38,10 +38,10 @@ do
         do
             mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -i -k $ksize -f $filename > output_initialization_openMP.txt
             
-            time_value_write=$(grep -o 'Generate time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
+            time_value=$(grep -o 'Generate time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
             echo "$ksize,$n_threads,$time_value" >> $out_generate
-            time_value_generate=$(grep -o 'Write time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
-            echo "$ksize,$n_threads,$time_value" >> $out_write
+            time_value=$(grep -o 'Write time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
+            echo "$ksize,$n_threads,$time" >> $out_write
         done
     done
 
@@ -52,9 +52,9 @@ do
         do
             mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -i -k $ksize -f $filename > output_initialization_openMP.txt
             
-            time_value_write=$(grep -o 'Generate time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
+            time_value=$(grep -o 'Generate time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
             echo "$ksize,$n_threads,$time_value" >> $out_generate
-            time_value_generate=$(grep -o 'Write time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
+            time_value=$(grep -o 'Write time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
             echo "$ksize,$n_threads,$time_value" >> $out_write
         done
     done
