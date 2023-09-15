@@ -27,6 +27,8 @@ out_filename=results/evolve_ordered/weak_MPI.csv # To write times
 echo "size,processes,time" > $out_filename
 
 initial_size=10000
+nsteps=100
+s=`expr $nsteps + 2`
 
 for n_processes in 1 2 3 4
 do  
@@ -35,7 +37,7 @@ do
     filename="init_"$formatted_number".pgm" # To write image
     for j in {1..5..1}
     do
-        mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -i -k $current_size -f $filename > output_ordered_weak_MPI.txt
+        mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $current_size -e 0 -f $filename -n $nsteps -s $s >  output_ordered_weak_MPI.txt
         time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_weak_MPI.txt | awk '{print $3}')
         echo "$current_size,$n_processes,$time_value" >> $out_filename
     done
