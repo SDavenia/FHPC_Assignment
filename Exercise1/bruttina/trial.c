@@ -1,5 +1,7 @@
 #define _GNU_SOURCE // sched_getcpu(3) is glibc-specific (see the man page)
-
+/*
+TO UNDERSTAND WHERE EVERYTHING RUNS with various map by and bind-to options
+*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

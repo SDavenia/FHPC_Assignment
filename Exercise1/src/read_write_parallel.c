@@ -94,6 +94,9 @@ void initialize_parallel(int k, char *fname, int rank, int size, int rows_initia
   
   // In this parallel region the different threads generate random numbers on different sections of the matrix.
   //double Tstart_init = omp_get_wtime();
+  double Tstart_generate;
+  if(rank == 0) 
+    Tstart_generate = omp_get_wtime();
   #pragma omp parallel
   {
     int my_id = omp_get_thread_num();
@@ -110,6 +113,11 @@ void initialize_parallel(int k, char *fname, int rank, int size, int rows_initia
         ptr[i] = (random_num==1) ? 255 : 0;
     }
 
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 0){
+    double Time_generate = omp_get_wtime() - Tstart_generate;
+    printf("Generate time: %lf\n", Time_generate);
   }
   // double Time_init = omp_get_wtime() - Tstart_init;
   // printf("I am process %d and generating random matrix took %lf s\n",rank, Time_init);
@@ -152,7 +160,15 @@ void initialize_parallel(int k, char *fname, int rank, int size, int rows_initia
   */
   
   // Write to file.
+  double Tstart_write;
+  if(rank == 0) 
+    Tstart_write = omp_get_wtime();
   write_pgm_parallel(ptr, 255, k, k, fname, rank, size, rows_initialize);
+  MPI_Barrier(MPI_COMM_WORLD);
+  if(rank == 0){
+    double Time_write = omp_get_wtime() - Tstart_write;
+    printf("Write time: %lf\n", Time_write);
+  }
 
   free(ptr);
 }

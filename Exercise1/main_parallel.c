@@ -98,21 +98,32 @@ int main ( int argc, char **argv )
   if(action == INIT){
     // create initial conditions
     // Only the master thread takes the time
+    /*
     double Tstart_init;
     if(rank == 0) 
       Tstart_init = omp_get_wtime();
+    */
     initialize_parallel(k,file_path, rank, size, rows_read);
-    MPI_Barrier(MPI_COMM_WORLD);
+    /*
     if(rank == 0){
       double Time_init = omp_get_wtime() - Tstart_init;
       printf("Initialize time: %lf\n", Time_init);
     }
+    */
   }else{ 
     // Read and run a playground
     unsigned char* current;
     //double Tstart_read = omp_get_wtime();
     //read_pgm_parallel(&current, k, file_path, rank, size, rows_read);
+    double Tstart_read;
+    if(rank == 0)
+      Tstart_read = omp_get_wtime();
     read_pgm_parallel(&current, k, file_path, rank, size, rows_read);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(rank == 0){
+      double Time_read = omp_get_wtime() - Tstart_read;
+      printf("Read time: %lf\n", Time_read);
+    }
     //double Time_read = omp_get_wtime() - Tstart_read;
     //printf("I am process %d, Read time : %lf\n", rank, Time_read);
 

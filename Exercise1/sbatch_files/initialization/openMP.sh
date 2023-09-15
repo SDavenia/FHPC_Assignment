@@ -13,7 +13,6 @@ module load openMPI/4.1.5/gnu
 
 cd ../../ 
 make
-# cd sbatch_files/initialization
 
 # Define MPI binding and OMP affinity
 MAPBY=node
@@ -22,10 +21,13 @@ BINDTO=socket
 export OMP_PLACES=cores
 export OMP_PROC_BIND=close
 
-out_filename=results/initialization/openMP.csv # To write times
-echo "size,threads,time" > $out_filename
+out_write=results/initialization/openMP_write.csv
+out_generate=results/initialization/openMP_generate.csv
 
-for ksize in 10000 20000
+echo "size,threads,time" > $out_write
+echo "size,threads,time" > $out_generate
+
+for ksize in 20000
 do
     formatted_number=$(printf "%05d" "$ksize")
     filename="init_"$formatted_number".pgm" # To write image
@@ -35,8 +37,11 @@ do
         for j in {1..5..1}
         do
             mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -i -k $ksize -f $filename > output_initialization_openMP.txt
-            time_value=$(grep -o 'Initialize time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
-            echo "$ksize,$n_threads,$time_value" >> $out_filename
+            
+            time_value_write=$(grep -o 'Generate time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
+            echo "$ksize,$n_threads,$time_value" >> $out_generate
+            time_value_generate=$(grep -o 'Write time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
+            echo "$ksize,$n_threads,$time_value" >> $out_write
         done
     done
 
@@ -46,8 +51,11 @@ do
         for j in {1..5..1}
         do
             mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -i -k $ksize -f $filename > output_initialization_openMP.txt
-            time_value=$(grep -o 'Initialize time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
-            echo "$ksize,$n_threads,$time_value" >> $out_filename
+            
+            time_value_write=$(grep -o 'Generate time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
+            echo "$ksize,$n_threads,$time_value" >> $out_generate
+            time_value_generate=$(grep -o 'Write time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
+            echo "$ksize,$n_threads,$time_value" >> $out_write
         done
     done
 done
