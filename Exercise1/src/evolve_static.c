@@ -291,7 +291,6 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
         // Send message to process 0
         MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, rank + n_step +1 , MPI_COMM_WORLD, &request[1]);
         
-        // BLOCKING RECEIVE
         // Lower row receive
         MPI_Irecv(next + k + rows_read*k, k, MPI_UNSIGNED_CHAR, 0, 0+n_step+1, MPI_COMM_WORLD, &request[2]);
         // Upper row receive
@@ -304,7 +303,7 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
         
         // int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
         //   MPI_Comm comm, MPI_Status *status)
-        // BLOCKING RECEIVE
+  
         // Upper row receive
         MPI_Irecv(next, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, &request[2]);
         // Lower row receive
