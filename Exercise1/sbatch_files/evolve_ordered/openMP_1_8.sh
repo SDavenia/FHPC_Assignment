@@ -26,7 +26,7 @@ nsteps=100
 s=`expr $nsteps + 2`
 # To ensure printing times are not included in the evolve times
 
-out_filename=results/evolve_ordered/openMP.csv # To write times
+out_filename=results/evolve_ordered/openMP_1_8.csv # To write times
 echo "size,threads,time" > $out_filename
 
 for ksize in 10000
@@ -38,13 +38,13 @@ do
         export OMP_NUM_THREADS=$n_threads
         for j in {1..5..1}
         do
-            mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s  > output_ordered_openMP.txt
-            time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_openMP.txt | awk '{print $3}')
+            mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 0 -f $filename -n $nsteps -s $s  > output_ordered_openMP_1_8.txt
+            time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_openMP_1_8.txt | awk '{print $3}')
             echo "$ksize,$n_threads,$time_value" >> $out_filename
         done
     done
 done
 
-rm output_ordered_openMP.txt # Remove useless temporary file
+rm output_ordered_openMP_1_8.txt # Remove useless temporary file
 
 

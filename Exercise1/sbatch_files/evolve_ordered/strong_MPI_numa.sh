@@ -2,7 +2,7 @@
 #SBATCH --partition=EPYC 
 #SBATCH --job-name=SMPIN_Ordered
 #SBATCH --nodes=2
-#SBATCH --ntasks-per-node=2 
+#SBATCH --ntasks-per-node=8
 #SBATCH --cpus-per-task=16 
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
@@ -37,7 +37,7 @@ do
     do
         for j in {1..5..1}
         do
-            mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s > output_ordered_strong_MPI_numa.txt
+            mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 0 -f $filename -n $nsteps -s $s > output_ordered_strong_MPI_numa.txt
             time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_strong_MPI_numa.txt | awk '{print $3}')
             echo "$ksize,$n_processes,$time_value" >> $out_filename
         done

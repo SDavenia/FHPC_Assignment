@@ -2,7 +2,7 @@
 #SBATCH --partition=EPYC 
 #SBATCH --job-name=SMPIN_Static
 #SBATCH --nodes=2
-#SBATCH --ntasks-per-node=2 
+#SBATCH --ntasks-per-node=8
 #SBATCH --cpus-per-task=16 
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 

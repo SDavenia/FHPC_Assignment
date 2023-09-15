@@ -2,7 +2,7 @@
 #SBATCH --partition=EPYC 
 #SBATCH --job-name=SMPIN_Ordered
 #SBATCH --nodes=2
-#SBATCH --ntasks-per-node=2 
+#SBATCH --ntasks-per-node=8 
 #SBATCH --cpus-per-task=16 
 #SBATCH --mem=200gb 
 #SBATCH --time=02:00:00 
@@ -23,7 +23,7 @@ export OMP_PLACES=cores
 export OMP_PROC_BIND=close
 export OMP_NUM_THREADS=16
 
-out_filename=results/evolve_ordered/strong_MPI_numa.csv # To write times
+out_filename=results/evolve_ordered/strong_MPI_numa_1_4.csv # To write times
 echo "size,processes,time" > $out_filename
 
 nsteps=100
@@ -37,14 +37,14 @@ do
     do
         for j in {1..5..1}
         do
-            mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s > output_ordered_strong_MPI_numa.txt
-            time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_strong_MPI_numa.txt | awk '{print $3}')
+            mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 0 -f $filename -n $nsteps -s $s > output_ordered_strong_MPI_numa_1_4.txt
+            time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_strong_MPI_numa_1_4.txt | awk '{print $3}')
             echo "$ksize,$n_processes,$time_value" >> $out_filename
         done
     done
 done
 
-rm output_ordered_strong_MPI_numa.txt # Remove useless temporary file
+rm output_ordered_strong_MPI_numa_1_4.txt # Remove useless temporary file
 
 
 

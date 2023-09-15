@@ -38,7 +38,7 @@ do
         export OMP_NUM_THREADS=$n_threads
         for j in {1..5..1}
         do
-            mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s  > output_ordered_openMP.txt
+            mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 0 -f $filename -n $nsteps -s $s  > output_ordered_openMP.txt
             time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_openMP.txt | awk '{print $3}')
             echo "$ksize,$n_threads,$time_value" >> $out_filename
         done
