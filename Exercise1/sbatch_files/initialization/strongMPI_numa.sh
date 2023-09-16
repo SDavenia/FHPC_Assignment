@@ -5,7 +5,7 @@
 #SBATCH --ntasks-per-node=8
 #SBATCH --cpus-per-task=16 
 #SBATCH --mem=200gb 
-#SBATCH --time=00:45:00 
+#SBATCH --time=02:00:00 
 #SBATCH --exclusive
 #SBATCH --output=SMPIN_Init.out
 
@@ -23,8 +23,8 @@ export OMP_PLACES=cores
 export OMP_PROC_BIND=close
 export OMP_NUM_THREADS=16
 
-out_generate=results/initialization/strong_MPI_numa_generate_10000.csv # To write times
-out_write=results/initialization/strong_MPI_numa_write_10000.csv # To write times
+out_generate=results/initialization/strong_MPI_numa_generate_new.csv # To write times
+out_write=results/initialization/strong_MPI_numa_write_new.csv # To write times
 echo "size,processes,time" > $out_generate
 echo "size,processes,time" > $out_write
 

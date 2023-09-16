@@ -21,13 +21,13 @@ BINDTO=socket
 export OMP_PLACES=cores
 export OMP_PROC_BIND=close
 
-out_write=results/initialization/openMP_write.csv
-out_generate=results/initialization/openMP_generate.csv
+out_write=results/initialization/openMP_write_new.csv
+out_generate=results/initialization/openMP_generate_new.csv
 
 echo "size,threads,time" > $out_write
 echo "size,threads,time" > $out_generate
 
-for ksize in 20000
+for ksize in 10000 20000
 do
     formatted_number=$(printf "%05d" "$ksize")
     filename="init_"$formatted_number".pgm" # To write image
