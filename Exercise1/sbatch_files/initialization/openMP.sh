@@ -41,7 +41,7 @@ do
             time_value=$(grep -o 'Generate time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
             echo "$ksize,$n_threads,$time_value" >> $out_generate
             time_value=$(grep -o 'Write time: [0-9.]*' output_initialization_openMP.txt | awk '{print $3}')
-            echo "$ksize,$n_threads,$time" >> $out_write
+            echo "$ksize,$n_threads,$time_value" >> $out_write
         done
     done
 

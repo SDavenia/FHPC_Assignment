@@ -21,6 +21,7 @@
 #include "evolve_ordered.h"
 #include "evolve_static.h"
 #include "read_write_parallel.h"
+#include "black_white.h"
 
 #define INIT 1
 #define RUN  2
@@ -38,6 +39,7 @@ int   e      = ORDERED;
 int   n      = 10000;
 int   s      = 1;
 char *fname  = NULL;
+
 
 int main ( int argc, char **argv )
 {
@@ -143,7 +145,7 @@ int main ( int argc, char **argv )
         double Time_ord = omp_get_wtime() - Tstart_ord;
         printf("Ordered time: %lf\n", Time_ord);
       }
-    }else{
+    }else if(e == 1){ // Static
       unsigned char* next = (unsigned char*)malloc((rows_read+2)*k*sizeof(unsigned char));
       double Tstart_static;
       if(rank == 0)
@@ -155,6 +157,14 @@ int main ( int argc, char **argv )
         printf("Static time: %lf\n", Time_static);
       }
       free(next);
+    }else{ // Black and white
+      if(rank == 0){
+        double Tstart_bw;
+        Tstart_bw = omp_get_wtime();
+        evolve_black_white(current, k, n);
+        double Time_bw = omp_get_wtime() - Tstart_bw;
+        printf("BlackWhite time: %lf\n", Time_bw);
+      }
     }
     
     

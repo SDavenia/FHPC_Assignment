@@ -10,8 +10,6 @@
 // To execute: srun ./black_white.exe 5
 
 
-
-
 void read_pgm_image( unsigned char **image, int *maxval, int *xsize, int *ysize, const char *image_name)
 /*
  * image        : a pointer to the pointer that will contain the image
@@ -144,12 +142,23 @@ void evolve_black_white_parallel(unsigned char *current, int k, int n_steps){
             for(int i=1;i<k;i++){
                 int t = (i+1)%2;
                 #pragma omp for
-                for(int j = t; j<k;j+=2){
+                for(int j = t; j<k-1;j+=2){
                     //fprintf(prova_file,"I am thread %d and I am updating element (%d,%d)\n", myid, i,j);
                     int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                         current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
                         current[(i-1)*k + j] + current[(i+1)*k + j];
                     current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
+                }
+                #pragma omp master
+                {
+                  // If number of columns is odd, update last column of odd rows
+                  if(t == 0){
+                    int j = k-1;
+                    int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                        current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                        current[(i-1)*k + j] + current[(i+1)*k + j];
+                    current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
+                  }
                 }
             }
             // Update bottom row of frame (only black positions)
@@ -175,12 +184,23 @@ void evolve_black_white_parallel(unsigned char *current, int k, int n_steps){
             for(int i=1;i<k;i++){
                 int t = i%2;
                 #pragma omp for
-                for(int j=t; j<k;j+=2){
+                for(int j=t; j<k-1;j+=2){
                     //fprintf(prova_file,"I am thread %d and I am updating element (%d,%d)\n", myid, i,j);
                     int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                         current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
                         current[(i-1)*k + j] + current[(i+1)*k + j];
                     current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
+                }
+                #pragma omp master
+                {
+                  // If number of columns is odd, update last column of odd rows
+                  if(t == 1){
+                    int j = k-1;
+                    int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
+                        current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
+                        current[(i-1)*k + j] + current[(i+1)*k + j];
+                    current[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255;
+                  }
                 }
             }
             // Update bottom row of frame (only white positions)
@@ -222,7 +242,7 @@ void evolve_black_white_serial(unsigned char *current, int k, int n_steps){
         for(int j=0;j<k;j+=2){
             current[(k+1)*k+j] = current[k+j];
         }
-/* 
+
         // Update last inner row of current and upper row of frame
         // Update black positions (consider that the first cell is black)
 
@@ -262,8 +282,6 @@ void evolve_black_white_serial(unsigned char *current, int k, int n_steps){
             // Frame
             current[j] = current[i*k+j];
         }
-        */
-
     }
 }
 
@@ -290,31 +308,33 @@ int main(int argc, char** argv){
     int ysize;
     int maxval;  
     
-    unsigned char* input;
+    /*unsigned char* input;
     char *file_path = (char*)malloc( sizeof(optarg)+ 1 +30);
     strcpy(file_path,"images/initial_matrices/init_20000.pgm");
     read_pgm_image(&input, &maxval, &xsize, &ysize, file_path);
+    
 
     unsigned char* current = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
     initialize_current(input, current, k);
-    free(input);
+    free(input);*/
 
-    double Tstart_evolve;
-    Tstart_evolve = omp_get_wtime();
-    evolve_black_white_parallel(current, k, 1);
-    double Time_evolve = omp_get_wtime() - Tstart_evolve;
-    printf("Evolve time: %lf\n", Time_evolve);
     
-    /*
     unsigned char* current = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
     initialize_matrix(current, k);
     print_image(current,k+2,k);
     evolve_black_white_parallel(current, k, 1);
     printf("Matrix after 1 step of update:\n");
     print_image(current,k+2,k);
-    */
+    
+
+    /*double Tstart_bw;
+    Tstart_bw = omp_get_wtime();
+    evolve_black_white_parallel(current, k, 1);
+    double Time_bw = omp_get_wtime() - Tstart_bw;
+    printf("Black and white time: %lf\n", Time_bw);*/
+    
 
     free(current);
-    free(file_path);
+    //free(file_path);
     return 0;
 }

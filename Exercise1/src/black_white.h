@@ -1,0 +1,1 @@
+void evolve_black_white(unsigned char *current, int k, int n_steps);
