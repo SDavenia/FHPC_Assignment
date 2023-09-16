@@ -106,12 +106,19 @@ void initialize_matrix(unsigned char *current, int k){
     unsigned char rand_num = (unsigned char) rand_r(&seed) % 2;
     current[i+k] = rand_num==1 ? 255 : 0;
   }*/
-  int values[] = {
+  /*int values[] = {
         255, 255, 0, 255, //255,
         0, 0, 0, 0, //0,
         0, 0, 0, 0, //255,
         0, 0, 0, 0, //0,
         255, 255, 255, 0, //255
+    };*/
+    int values[] = {
+        0, 255, 0, 0, 255,
+        255, 0, 255, 255, 0,
+        255, 0, 0, 255, 0,
+        0, 0, 0, 0, 0,
+        255, 255, 0, 255, 255
     };
     for(int i = 0; i<k*k;i++){
         current[i+k]=values[i];
@@ -318,14 +325,17 @@ void evolve_black_white_parallel_odd(unsigned char *current, int k, int n_steps)
                 current[j] = current[i*k+j];
             }
         }
+
+      printf("Step %d\n", n_step);
+      print_image(current,k+2,k);
     }
 }
 
 void evolve_black_white_parallel(unsigned char *current, int k, int n_steps){
   if(k%2 == 0){
-    evolve_black_white_parallel_even(current, k, 1);
+    evolve_black_white_parallel_even(current, k, 5);
   }else{
-    evolve_black_white_parallel_odd(current, k, 1);
+    evolve_black_white_parallel_odd(current, k, 5);
   }
 
 }
@@ -427,9 +437,9 @@ int main(int argc, char** argv){
     unsigned char* current = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
     initialize_matrix(current, k);
     print_image(current,k+2,k);
-    evolve_black_white_parallel(current, k, 1);
-    printf("Matrix after 1 step of update:\n");
-    print_image(current,k+2,k);
+    evolve_black_white_parallel(current, k, 10);
+    /*printf("Matrix after 1 step of update:\n");
+    print_image(current,k+2,k);*/
     
 
     /*double Tstart_bw;
