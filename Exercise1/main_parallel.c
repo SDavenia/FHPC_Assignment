@@ -161,7 +161,7 @@ int main ( int argc, char **argv )
       if(rank == 0){
         double Tstart_bw;
         Tstart_bw = omp_get_wtime();
-        evolve_black_white(current, k, n);
+        evolve_black_white(current, k, n, s);
         double Time_bw = omp_get_wtime() - Tstart_bw;
         printf("BlackWhite time: %lf\n", Time_bw);
       }
