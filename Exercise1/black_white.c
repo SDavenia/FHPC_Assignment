@@ -101,28 +101,21 @@ void print_image(unsigned char* ptr, int nrow, int ncol){
 void initialize_matrix(unsigned char *current, int k){
   // generate a random matrix of 0 and 255 and create its rows frame
 
-  /*unsigned int seed = clock();
+  unsigned int seed = clock();
   for (int i = 0; i < k*k; i++) {
     unsigned char rand_num = (unsigned char) rand_r(&seed) % 2;
     current[i+k] = rand_num==1 ? 255 : 0;
-  }*/
+  }
   /*int values[] = {
         255, 255, 0, 255, //255,
         0, 0, 0, 0, //0,
         0, 0, 0, 0, //255,
         0, 0, 0, 0, //0,
         255, 255, 255, 0, //255
-    };*/
-    int values[] = {
-        0, 255, 0, 0, 255,
-        255, 0, 255, 255, 0,
-        255, 0, 0, 255, 0,
-        0, 0, 0, 0, 0,
-        255, 255, 0, 255, 255
     };
     for(int i = 0; i<k*k;i++){
         current[i+k]=values[i];
-    }
+    }*/
 
     // Last row of current -> First row of current
   for (int j = 0; j < k; j++){
@@ -151,6 +144,7 @@ void evolve_black_white_parallel_even(unsigned char *current, int k, int n_steps
               int t = (i+1)%2;
               #pragma omp for
               for(int j = t; j<k;j+=2){
+                printf("I am %d and column is %d\n", myid, j);
                   int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                       current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
                       current[(i-1)*k + j] + current[(i+1)*k + j];
@@ -333,9 +327,9 @@ void evolve_black_white_parallel_odd(unsigned char *current, int k, int n_steps)
 
 void evolve_black_white_parallel(unsigned char *current, int k, int n_steps){
   if(k%2 == 0){
-    evolve_black_white_parallel_even(current, k, 5);
+    evolve_black_white_parallel_even(current, k, 1);
   }else{
-    evolve_black_white_parallel_odd(current, k, 5);
+    evolve_black_white_parallel_odd(current, k, 1);
   }
 
 }
@@ -437,7 +431,7 @@ int main(int argc, char** argv){
     unsigned char* current = (unsigned char*)malloc((k+2)*k*sizeof(unsigned char));
     initialize_matrix(current, k);
     print_image(current,k+2,k);
-    evolve_black_white_parallel(current, k, 10);
+    evolve_black_white_parallel(current, k, 1);
     /*printf("Matrix after 1 step of update:\n");
     print_image(current,k+2,k);*/
     
