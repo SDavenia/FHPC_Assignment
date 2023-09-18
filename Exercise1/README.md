@@ -27,10 +27,10 @@ This will create the executable `main_parallel.exe`.
 To run the code use `mpirun` with the following arguments:
 - -i: to generate a new random playground
 - -r: to evolve the generated playground
-- -k value: playground size
+- -k *value*: playground size
 - -e [0|1|2]: evolution method; 0 means "ordered", 1 means "static", 2 means "white-black"
-- -f string: name of the .pgm file
-- -n value: number of steps to evolve the playground
-- -s value: every how many steps a snapshot of the playground is saved on a .pgm file
+- -f *string*: name of the .pgm file
+- -n *int value*: number of steps to evolve the playground
+- -s *int value*: every how many steps a snapshot of the playground is saved on a .pgm file
 
 In the `sbatch_files` folder there are the batch files to run the code using the different evolution methods.
