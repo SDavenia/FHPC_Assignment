@@ -17,14 +17,20 @@ In the `results` folder you can find the .csv files with the times obtained by r
 
 ## How to run this code
 Clone the respository with:\
-```git clone https://github.com/SDavenia/FHPC_Assignment.git```\
+```git clone https://github.com/SDavenia/FHPC_Assignment.git```
 
-To compile use the [Makefile](https://github.com/FilippoOlivo/Foundations_of_HPC_Assignment/blob/main/excercise1/Makefile) with:
+To compile use the [Makefile](https://github.com/FilippoOlivo/Foundations_of_HPC_Assignment/blob/main/excercise1/Makefile) with:\
 `make`
 
-This will create the executable `main_parallel.exe`.
+This will create the executable `main_parallel.exe`.\
 
 To run the code use `mpirun` with the following arguments:
-
+- -i: if you want to generate a new random playground
+- -r: if you want to evolve the generated playground
+- -k value: specifies the playground size
+- -e [0|1|2]: evolution method; 0 means "ordered", 1 means "static", 2 means "white-black"
+- -f string: the name of the pgm file
+- -n value: number of steps to evolve the playground
+- -s value: every how many steps save a snapshot of the playground
 
 In the `sbatch_files` folder there are the batch files to run the code using the different evolution methods.
