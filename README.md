@@ -3,9 +3,6 @@ This repository contains the project for the UniTS "Foundations of High Performa
 More detail on the project can be found in [this](https://github.com/Foundations-of-HPC/Foundations_of_HPC_2022/tree/main/Assignment) document.
 
 ## Structure of this repository
-Each exercise is fully contained within its respective folder. Additional information can be found in the corresponding README file, where the structure of the folder is also explained.
-
-## Errors to fix
-- `read_pgm_parallel`: there is a hard coded 64, which is not optimal.
-- controlla i vari if e mettici il ? : notation.
-- 
+Each exercise is fully contained within its respective folder. Additional information can be found in the corresponding README file:
+- [Exercise 1]()
+- [Exercise 2]()
