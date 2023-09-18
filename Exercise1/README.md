@@ -22,7 +22,7 @@ Clone the respository with:\
 To compile use the [Makefile](https://github.com/FilippoOlivo/Foundations_of_HPC_Assignment/blob/main/excercise1/Makefile) with:\
 `make`
 
-This will create the executable `main_parallel.exe`.\
+This will create the executable `main_parallel.exe`.
 
 To run the code use `mpirun` with the following arguments:
 - -i: if you want to generate a new random playground
