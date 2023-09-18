@@ -17,7 +17,7 @@ In the `results` folder you can find the .csv files with the times obtained by r
 
 ## How to run this code
 Clone the respository with:\
-```git clone https://github.com/SDavenia/FHPC_Assignment.git```\
+```git clone https://github.com/SDavenia/FHPC_Assignment.git```\\
 
 In the `sbatch_files` folder there are the batch files to run the code. To run one of the evolution method, enter the corresponding folder and use:\
 ```sbatch evolution_method.sh```
