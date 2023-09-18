@@ -10,7 +10,12 @@ Different evolution methods are implemented:
 In the `src` folder you can find the code for the different evolution methods we implemented:
 - [Static evolution](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/evolve_static.c)
 - [Ordered evolution](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/evolve_ordered.c)
-- [White-Black](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/black_white.c)
+- [White-Black evolution](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/black_white.c)
 - [Read, Write and random generation of the matrix](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/read_write_parallel.c)
 
 In the `results` folder you can find the .csv files with the times obtained by running the code. The folder is subdivided according to the evolution methods used.
+
+## How to run this code
+Clone the respository with:
+
+```git clone https://github.com/SDavenia/FHPC_Assignment.git```
