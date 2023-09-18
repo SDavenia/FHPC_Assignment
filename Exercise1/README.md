@@ -1,8 +1,16 @@
-# Foundations of High Performance Computing Assignment
-This repository contains the project for the UniTS "Foundations of High Performance Computing" course A.Y. 2022-23. It was done in collaboration with [@ElenaRivaroli](https://github.com/ElenaRivaroli).\
-More detail on the project can be found in [this](https://github.com/Foundations-of-HPC/Foundations_of_HPC_2022/tree/main/Assignment) document.
+# Exercise 1
+This folder contains code and results for the Exercise 1. More details on the requirements can be found [here](https://github.com/Foundations-of-HPC/Foundations_of_HPC_2022/blob/main/Assignment/exercise1/Assignment_exercise1.pdf).\
+The goal of the exercise is to implement a parallel version of a variant of the famous [Conway’s “Game of Life”](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life).\
+Different evolution methods are implemented:
+- Static Evolution
+- Ordered Evolution
+- White-Black evolution
 
-## Structure of this repository
-Each exercise is fully contained within its respective folder. Additional information can be found in the corresponding README file:
-- [Exercise 1]()
-- [Exercise 2]()
+## Structure of the repository
+In the `src` folder you can find the code for the different evolution methods we implemented:
+- [Static evolution](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/evolve_static.c)
+- [Ordered evolution](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/evolve_ordered.c)
+- [White-Black](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/black_white.c)
+- [Read, Write and random generation of the matrix](https://github.com/SDavenia/FHPC_Assignment/blob/main/Exercise1/src/read_write_parallel.c)
+
+In the `results` folder you can find the .csv files with the times obtained by running the code. The folder is subdivided according to the evolution methods used.
