@@ -17,10 +17,7 @@ In the `results` folder you can find the .csv files with the times obtained by r
 
 ## How to run this code
 Clone the respository with:\
-```css
-background: #f2f2f2;
-padding: 10px;
-git clone https://github.com/SDavenia/FHPC_Assignment.git ```
+```git clone https://github.com/SDavenia/FHPC_Assignment.git ```
 
 To compile use the [Makefile](https://github.com/FilippoOlivo/Foundations_of_HPC_Assignment/blob/main/excercise1/Makefile) with:\
 `make`
