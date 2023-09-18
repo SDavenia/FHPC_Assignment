@@ -25,11 +25,11 @@ To compile use the [Makefile](https://github.com/FilippoOlivo/Foundations_of_HPC
 This will create the executable `main_parallel.exe`.
 
 To run the code use `mpirun` with the following arguments:
-- -i: if you want to generate a new random playground
-- -r: if you want to evolve the generated playground
-- -k value: specifies the playground size
+- -i: to generate a new random playground
+- -r: to evolve the generated playground
+- -k value: playground size
 - -e [0|1|2]: evolution method; 0 means "ordered", 1 means "static", 2 means "white-black"
-- -f string: the name of the .pgm file
+- -f string: name of the .pgm file
 - -n value: number of steps to evolve the playground
 - -s value: every how many steps a snapshot of the playground is saved on a .pgm file
 
