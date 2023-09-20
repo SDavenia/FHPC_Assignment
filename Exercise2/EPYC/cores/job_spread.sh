@@ -26,7 +26,7 @@ for implem in 'oblas' 'mkl' 'blis'
 do
     for type in 'double' 'float'
     do
-        for n_threads in {2..128..2}
+        for n_threads in 1 {2..128..2}
         do
             export OMP_NUM_THREADS=$n_threads
             export BLIS_NUM_THREADS=$n_threads 
