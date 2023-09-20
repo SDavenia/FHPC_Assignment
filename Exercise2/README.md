@@ -17,7 +17,7 @@ Inside each folder there are two additional folders:
 In both cases there are two batch files `job_close.sh` and `job_spread.sh` to run the code using different thread affinity policies, respectively CLOSE and SPREAD.
 
 As such the `.csv` files with the results are divided in two different folders `close` and `spread`. Each of the resulting files contains final specifications in the name:
-- In folder *cores*, each file is named as \>$<$library$>$_<$precision$>_<$number of cores$>$.csv 
+- In folder *cores*, each file is named as \<library>_<precision>_<number of cores>.csv 
 - In folder *size*, each file is named as $<$library$>$_<$precision$>_<$matrix size$>$.csv
 
 Where library specifies the math library being used (see above) and precision specifies whether double or float precision was used.
