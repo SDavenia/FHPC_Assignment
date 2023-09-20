@@ -21,9 +21,10 @@ export BLIS_NUM_THREADS=64
 
 srun -n1 make cpu # Now I have all the needed executables.
 
-for implem in 'oblas' 'mkl' 'blis'
+#for implem in 'oblas' 'mkl' 'blis'
+for implem in 'mkl'
 do
-    for type in 'float'
+    for type in 'float' 'double'
     do
         for m_size in {2000..20000..1000}
         do
