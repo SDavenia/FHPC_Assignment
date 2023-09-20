@@ -14,7 +14,7 @@ Inside each folder there are two additional folders:
 - `cores` which contains batch files and results related to *cores scalability*
 - `cores` which contains batch files and results related to *size scalability*
 
-In both cases there are two batch files `job_close.sh` and `job_spread.sh` to run the code using different thread affinity policies, respectively CLOSE and SPREAD.\
+In both cases there are two batch files `job_close.sh` and `job_spread.sh` to run the code using different thread affinity policies, respectively CLOSE and SPREAD.
 
 As such the `.csv` files with the results are divided in two different folders `close` and `spread`. Each of the resulting files contains final specifications in the name:
 - In folder *cores*, each file is named as <library>_<precision>_<number of cores>.csv 
