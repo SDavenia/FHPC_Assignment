@@ -56,7 +56,3 @@ The `sbatch_files` folder contains the batch scripts to submit the jobs on the O
 ```
 sbatch batch_file.sh
 ```
-
-The `results` folder contains the measurements taken for each scalability study. It has the same structure as the `sbatch_files` folder.
-
-
