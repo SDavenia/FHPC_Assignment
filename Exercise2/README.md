@@ -31,9 +31,10 @@ Finally, folder `parallel_initialization` contains a modified `gemm_modified.c` 
 
 ## How to run
 1. Decide what scalability you want to analyze and the type of node. Then enter the corresponding folder `<node_type>/<scalability_type>`. 
-2. Execute the `job_close.sh` and `job_spread.sh` batch scripts using for example:
+2. Execute the `job_close.sh` or `job_spread.sh` batch scripts using for example:
 ```
 sbatch job_close.sh
 ```
 This will use the Makefile specific to the problem under investigation, which is located in the same directory.
-3. All results will be written on .csv files depending on the thread affinity policy, and the name of the file will contain the necessary information.
+
+3. All results will be written on .csv files as described above.
