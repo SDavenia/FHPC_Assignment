@@ -12,19 +12,21 @@ As such there are two different folders that contain measurements from that node
 
 Inside each folder there are two additional folders:
 - `cores` which contains batch files and results related to *cores scalability*
-- `cores` which contains batch files and results related to *size scalability*
+- `size` which contains batch files and results related to *size scalability*
 
-In both cases there are two batch files `job_close.sh` and `job_spread.sh` to run the code using different thread affinity policies, respectively CLOSE and SPREAD.
+In both cases there are two batch files `job_close.sh` and `job_spread.sh` to run the code using different thread affinity policies, respectively *close* and *spread*.
 
 As such the `.csv` files with the results are divided in two different folders `close` and `spread`. Each of the resulting files contains final specifications in the name:
-- In folder *cores*, each file is named as \<library>_<precision>_<number of cores>.csv 
-- In folder *size*, each file is named as $<$library$>$_<$precision$>_<$matrix size$>$.csv
+- In folder `cores`, each file is named as \<library>\_\<precision>\_\<number of cores\>.csv 
+- In folder `size`, each file is named as \<library>\_\<precision>\_\<matrix size\>.csv
 
-Where library specifies the math library being used (see above) and precision specifies whether double or float precision was used.
+Where \<library> specifies the math library being used (see above) and \<precision> specifies whether double or float precision was used.
+
+The folder 
 
 ## Additional files
-- The folder `attempts` contains some old results and previous trials, and should be ignored.
 - There are some `analysis.ipynb` files which are used to extract and plot the results which are reported in the report.
+- The folder `attempts` contains some old results and previous trials, and should be ignored.
 - The `MAKEFILE` and `gemm.c` files were provided by the course teachers, and only slightly modified.
 
 --------------------------------------------------------------------------------
