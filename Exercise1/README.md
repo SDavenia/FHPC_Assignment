@@ -26,7 +26,6 @@ To compile use the [Makefile](https://github.com/FilippoOlivo/Foundations_of_HPC
 make
 ```
 
-
 This will create the executable `main_parallel.exe`.
 
 To run the code use `mpirun` with the following arguments:
@@ -38,11 +37,26 @@ To run the code use `mpirun` with the following arguments:
 - -n *int value*: number of steps to evolve the playground
 - -s *int value*: every how many steps a snapshot of the playground is saved on a .pgm file. This will be saved in the folder image with name of the form *snapshot_nnnnn.pgm*, where *nnnnn* is the step at which the image is captured padded with zeros to obtain 5 digits.
 
+- - - 
+Let us show how an example.
+
+1. To generate an initial playground of size 100:
+```
+mpirun ./main_parallel.exe -i -k 100 -f init_00100.pgm 
+```
+2. To evolve the playground in a static way for 10 steps and saving a snapshot every 2 steps using the playground above:
+```
+mpirun ./main_parallel.exe -r -k 100 -e 1 -f init_00100.pgm -n 10 -s 2
+```
+- - - 
+
 Note that all the images will be stored in the `images` folder. The generated playgrounds will be stored in `images/initial_matrices`, while the generated snapshots are included in the folder `images/<evolution_method>`, where `evolution_method` is one of the proposed ones.
 
-In the `sbatch_files` folder there are the batch files to run the code using the different evolution methods. To run one of them use:
+The `sbatch_files` folder contains the batch scripts to submit the jobs on the ORFEO cluster. Each subfolder contains the script to execute the corresponding evolution type and collect data for each scalability study considered (more detail in the report). To run one of them use:
 ```
 sbatch batch_file.sh
 ```
+
+The `results` folder contains the measurements taken for each scalability study. It has the same structure as the `sbatch_files` folder.
 
 
