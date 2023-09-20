@@ -43,5 +43,6 @@ Basic/.DS_Store
 
 # Images and text #
 ##################
+*.pgm
 *.txt
 *.loc
