@@ -1,9 +1,0 @@
-#!/bin/bash
-for dir in */; do
-    # Perform actions on each directory here
-    cd $dir
-    rm -rf *.pgm
-    rm -rf *.lock
-    rm -rf *.loc
-    cd ../
-done
