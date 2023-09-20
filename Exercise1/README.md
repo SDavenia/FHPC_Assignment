@@ -37,8 +37,7 @@ To run the code use `mpirun` with the following arguments:
 - -n *int value*: number of steps to evolve the playground
 - -s *int value*: every how many steps a snapshot of the playground is saved on a .pgm file
 
-In the `sbatch_files` folder there are the batch files to run the code using the different evolution methods.\
-To run one of them use:
+In the `sbatch_files` folder there are the batch files to run the code using the different evolution methods. To run one of them use:
 ```
 sbatch batch_file.sh
 ```
