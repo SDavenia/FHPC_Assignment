@@ -22,7 +22,7 @@ As such the `.csv` files with the results are divided in two different folders `
 
 Where \<library> specifies the math library being used (see above) and \<precision> specifies whether double or float precision was used.
 
-The folder 
+Finally, folder `parallel_initialization` contains a modified `gemm_modified.c` files where we use a parallel initialization of the matrices.
 
 ## Additional files
 - There are some `analysis.ipynb` files which are used to extract and plot the results which are reported in the report.
