@@ -33,7 +33,7 @@ To run the code use `mpirun` with the following arguments:
 - -r: to evolve the generated playground
 - -k *value*: playground size
 - -e [0|1|2]: evolution method; 0 means "ordered", 1 means "static", 2 means "white-black"
-- -f *string*: name of the .pgm file (the file name should be of the form *init_nnnnn* where *nnnnn* is the playground size with 5 digits, padded with zeros)
+- -f *string*: name of the .pgm file (the file name should be of the form *init_nnnnn.pgm* where *nnnnn* is the playground size with 5 digits, padded with zeros)
 - -n *int value*: number of steps to evolve the playground
 - -s *int value*: every how many steps a snapshot of the playground is saved on a .pgm file
 
