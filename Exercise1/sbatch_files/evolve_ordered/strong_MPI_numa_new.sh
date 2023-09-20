@@ -22,7 +22,7 @@ export OMP_PLACES=cores
 export OMP_PROC_BIND=close
 export OMP_NUM_THREADS=16
 
-out_filename=results/evolve_ordered/strong_MPI_numa_8_16_new.csv # To write times
+out_filename=results/evolve_ordered/strong_MPI_numa_new.csv # To write times
 echo "size,processes,time" > $out_filename
 
 nsteps=100
@@ -32,18 +32,18 @@ for ksize in 10000
 do
     formatted_number=$(printf "%05d" "$ksize")
     filename="init_"$formatted_number".pgm" # To write image
-    for n_processes in 8 16
+    for n_processes in 1 2 4 8 16
     do
         for j in {1..5..1}
         do
-            mpirun -n $n_processes --map-by $MAPBY ./main_parallel.exe -r -k $ksize -e 0 -f $filename -n $nsteps -s $s > output_ordered_strong_MPI_numa_8_16.txt
-            time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_strong_MPI_numa_8_16.txt | awk '{print $3}')
+            mpirun -n $n_processes --map-by $MAPBY ./main_parallel.exe -r -k $ksize -e 0 -f $filename -n $nsteps -s $s > output_ordered_strong_MPI_numa.txt
+            time_value=$(grep -o 'Ordered time: [0-9.]*' output_ordered_strong_MPI_numa.txt | awk '{print $3}')
             echo "$ksize,$n_processes,$time_value" >> $out_filename
         done
     done
 done
 
-rm output_ordered_strong_MPI_numa_8_16.txt # Remove useless temporary file
+rm output_ordered_strong_MPI_numa.txt # Remove useless temporary file
 
 
 

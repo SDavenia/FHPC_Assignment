@@ -37,8 +37,8 @@ do
     do
         for j in {1..5..1}
         do
-            mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s > output_static_strong_MPI_numa.txt
-            time_value=$(grep -o 'Static time: [0-9.]*' output_static_strong_MPI_numa.txt | awk '{print $3}')
+            mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s > output_static_strong_MPI_numa_10000.txt
+            time_value=$(grep -o 'Static time: [0-9.]*' output_static_strong_MPI_numa_10000.txt | awk '{print $3}')
             echo "$ksize,$n_processes,$time_value" >> $out_filename
         done
     done
@@ -46,15 +46,11 @@ do
     do
         for j in {1..5..1}
         do
-            mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s > output_static_strong_MPI_numa.txt
-            time_value=$(grep -o 'Static time: [0-9.]*' output_static_strong_MPI_numa.txt | awk '{print $3}')
+            mpirun -n $n_processes --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s > output_static_strong_MPI_numa_10000.txt
+            time_value=$(grep -o 'Static time: [0-9.]*' output_static_strong_MPI_numa_10000.txt | awk '{print $3}')
             echo "$ksize,$n_processes,$time_value" >> $out_filename
         done
     done
 done
 
-rm output_static_strong_MPI_numa.txt # Remove useless temporary file
-
-
-
-# mpirun -n 4 --map-by $MAPBY --bind-to $BINDTO ./main_parallel.exe -r -k $ksize -e 1 -f $filename -n $nsteps -s $s
+rm output_static_strong_MPI_numa_10000.txt # Remove useless temporary file
