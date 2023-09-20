@@ -1,5 +1,6 @@
 # Exercise 2
-This folder contains code and results for the Exercise 2. More details on the requirements can be found [here](https://github.com/Foundations-of-HPC/Foundations_of_HPC_2022/tree/main/Assignment/exercise2).\
+This folder contains code and results for the Exercise 2. More details on the requirements can be found [here](https://github.com/Foundations-of-HPC/Foundations_of_HPC_2022/tree/main/Assignment/exercise2).
+
 The aim of this exercise is to compare the performance of three math libraries which are used on HPC: openBLAS, MKL and BLIS. This latter was downloaded and compiled by us.
 To be more specific the task is to compare the level 3 BLAS function called *gemm*, which performs matrix multiplication in an efficient way.
 
@@ -12,10 +13,13 @@ As such there are two different folders that contain measurements from that node
 Inside each folder there are two additional folders:
 - `cores` which contains batch files and results related to *cores scalability*
 - `cores` which contains batch files and results related to *size scalability*
+
 In both cases there are two batch files `job_close.sh` and `job_spread.sh` to run the code using different thread affinity policies, respectively CLOSE and SPREAD.\
+
 As such the `.csv` files with the results are divided in two different folders `close` and `spread`. Each of the resulting files contains final specifications in the name:
 - In folder *cores*, each file is named as <library>_<precision>_<number of cores>.csv 
 - In folder *size*, each file is named as <library>_<precision>_<matrix size>.csv
+
 Where library specifies the math library being used (see above) and precision specifies whether double or float precision was used.
 
 ## Additional files
