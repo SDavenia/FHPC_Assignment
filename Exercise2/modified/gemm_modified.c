@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #ifdef MKL 
 #include "mkl_cblas.h"
@@ -24,7 +25,6 @@
 
 #include <time.h>
 #include <unistd.h>
-#include <omp.h>
 
 #ifdef USE_FLOAT
 #define MYFLOAT float
@@ -55,7 +55,8 @@ struct timespec diff(struct timespec start, struct timespec end)
 int main(int argc, char** argv)
 {
     MYFLOAT *A, *B, *C;
-    int m, n, k, i, j;
+    int m, n, k, i,j;
+  
     MYFLOAT alpha, beta;
     struct timespec begin, end;
     double elapsed;
