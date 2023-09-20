@@ -1,5 +1,7 @@
 # Foundations of High Performance Computing Assignment
-Final project for the UniTS "Foundations of High Performance Computing" course A.Y. 2022-23. It was done in collaboration with [@ElenaRivaroli](https://github.com/ElenaRivaroli).\
+Final project for the UniTS "Foundations of High Performance Computing" course A.Y. 2022-23. 
+
+The project was done in full collaboration with [@ElenaRivaroli](https://github.com/ElenaRivaroli).\
 More detail on the project can be found in [this](https://github.com/Foundations-of-HPC/Foundations_of_HPC_2022/tree/main/Assignment) document.
 
 ## Structure of this repository
