@@ -21,11 +21,6 @@ void evolve_ordered(unsigned char* current, int k, int n_steps, int rank, int si
 
 void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
   for(int n_step=0; n_step < n_steps; n_step++){
-    /*
-    FILE* prova_file;
-    char nome_file[] = "prova_file.txt";
-    prova_file=fopen(nome_file, "w");
-    */
     int nthreads;
     #pragma omp parallel
     {
@@ -38,7 +33,6 @@ void evolve_ordered_OMP(unsigned char* current, int k, int n_steps, int s){
         for(int j=0; j<k;j++){
           #pragma omp ordered
           {
-            // fprintf(prova_file,"I am thread %d and I am updating element (%d,%d)\n", myid,i,j);
             int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
             current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
             current[(i-1)*k + j] + current[(i+1)*k + j];
@@ -108,7 +102,6 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
         for(int j=0; j<k;j++){
           #pragma omp ordered
           {
-            // fprintf(prova_file,"I am thread %d and I am updating element (%d,%d)\n", myid,i,j);
             int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
             current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
             current[(i-1)*k + j] + current[(i+1)*k + j];
@@ -146,78 +139,6 @@ void evolve_ordered_MPI(unsigned char* current, int k, int n_steps, int rank, in
       MPI_Recv(current + k + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank+1+n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
     
-    /*
-    if(n_step == ){
-      FILE* prova_file;
-      char nome_file[] = "prova_read3.txt";
-      if(n_step==0){
-        if(rank==0){
-          prova_file = fopen(nome_file, "w");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-          
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-      }else{
-        if(rank==0){
-          prova_file = fopen(nome_file, "w");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-          
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        } 
-      }
-
-      MPI_Barrier(MPI_COMM_WORLD);
-      
-      if(rank==1){
-          prova_file = fopen(nome_file, "a");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-
-        fprintf(prova_file, "\n");
-        fclose(prova_file);
-      }
-
-      MPI_Barrier(MPI_COMM_WORLD);
-      if(rank==2){
-        prova_file = fopen(nome_file, "a");
-        fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-        for(int i = 0; i < (rows_read+2) * k; i++)
-            fprintf(prova_file, "%u ",current[i]);
-        fprintf(prova_file, "\n");
-        fclose(prova_file);
-      }
-
-      MPI_Barrier(MPI_COMM_WORLD);
-      if(rank==3){
-        prova_file = fopen(nome_file, "a");
-        fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-        for(int i = 0; i < (rows_read+2) * k; i++)
-            fprintf(prova_file, "%u ",current[i]);
-        fprintf(prova_file, "\n");
-        fclose(prova_file);
-      }
-
-      MPI_Barrier(MPI_COMM_WORLD);
-      if(rank==4){
-        prova_file = fopen(nome_file, "a");
-        fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-        for(int i = 0; i < (rows_read+2) * k; i++)
-            fprintf(prova_file, "%u ",current[i]);
-        fprintf(prova_file, "\n");
-        fclose(prova_file);
-      }
-    }
-    */
-    
-    // MPI_Waitall(2, request, MPI_STATUS_IGNORE);
-    // MPI_Barrier(MPI_COMM_WORLD);
     if((n_step+1) % s == 0){
       char file_path[45] = "images/evolve_ordered/"; // Sufficiently large
       char filename[20];
