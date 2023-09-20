@@ -23,7 +23,7 @@ srun -n1 make cpu # Now I have all the needed executables.
 
 for implem in 'oblas' 'mkl' 'blis'
 do
-    for type in 'double'
+    for type in 'float'
     do
         for m_size in {2000..20000..1000}
         do
