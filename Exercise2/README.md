@@ -1,10 +1,10 @@
 # Exercise 2
-This folder contains code and results for the Exercise 2. More details on the requirements can be found [here](https://github.com/Foundations-of-HPC/Foundations_of_HPC_2022/tree/main/Assignment/exercise2).
+This folder contains code and results for the Exercise 2. More details on the requirements can be found [here](https://github.com/Foundations-of-HPC/Foundations_of_HPC_2022/tree/main/Assignment/exercise2).\
 The aim of this exercise is to compare the performance of three math libraries which are used on HPC: openBLAS, MKL and BLIS. This latter was downloaded and compiled by us.
 To be more specific the task is to compare the level 3 BLAS function called *gemm*, which performs matrix multiplication in an efficient way.
 
 ## Structure of this repository
-The exercise requires to run this on both the AMD Epyc nodes available on the cluster and also the INTEL Thin nodes. 
+The exercise requires to run *gemm* on both the AMD Epyc nodes available on the cluster and also the INTEL Thin nodes. 
 As such there are two different folders that contain measurements from that nodes:
 - [`EPYC`](https://github.com/SDavenia/FHPC_Assignment/tree/main/Exercise2/EPYC)
 - [`THIN`](https://github.com/SDavenia/FHPC_Assignment/tree/main/Exercise2/THIN)
