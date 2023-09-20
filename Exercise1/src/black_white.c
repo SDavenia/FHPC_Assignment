@@ -76,7 +76,7 @@ void evolve_black_white_even(unsigned char *current, int k, int n_steps, int s){
           }
       }
         if((n_step+1) % s == 0){
-            char file_path[45] = "images/evolve_black_white/"; // Sufficiently large
+            char file_path[45] = "images/evolve_black_white/";
             char filename[20];
             
             snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
@@ -88,10 +88,6 @@ void evolve_black_white_even(unsigned char *current, int k, int n_steps, int s){
 
 void evolve_black_white_odd(unsigned char *current, int k, int n_steps, int s){
     int nthreads;
-    /*FILE* prova_file;
-    char nome_file[] = "prova_file.txt";
-    prova_file=fopen(nome_file, "w");
-    */
     for(int n_step=0; n_step < n_steps; n_step++){
         #pragma omp parallel
         {
@@ -101,7 +97,6 @@ void evolve_black_white_odd(unsigned char *current, int k, int n_steps, int s){
                 int t = (i+1)%2;
                 #pragma omp for
                 for(int j = t; j<k-1;j+=2){
-                    //fprintf(prova_file,"I am thread %d and I am updating element (%d,%d)\n", myid, i,j);
                     int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                         current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
                         current[(i-1)*k + j] + current[(i+1)*k + j];
@@ -153,7 +148,6 @@ void evolve_black_white_odd(unsigned char *current, int k, int n_steps, int s){
                 int t = i%2;
                 #pragma omp for
                 for(int j=t; j<k-1;j+=2){
-                    //fprintf(prova_file,"I am thread %d and I am updating element (%d,%d)\n", myid, i,j);
                     int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                         current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
                         current[(i-1)*k + j] + current[(i+1)*k + j];
@@ -192,7 +186,7 @@ void evolve_black_white_odd(unsigned char *current, int k, int n_steps, int s){
             }
         }
         if((n_step+1) % s == 0){
-            char file_path[45] = "images/evolve_black_white/"; // Sufficiently large
+            char file_path[45] = "images/evolve_black_white/";
             char filename[20];
             
             snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
@@ -203,11 +197,12 @@ void evolve_black_white_odd(unsigned char *current, int k, int n_steps, int s){
 }
 
 void evolve_black_white(unsigned char *current, int k, int n_steps, int s){
+  if(s == 0)
+    s = n_steps; // To ensure if we call s = 0, only last one is printed. 
   if(k%2 == 0){
     evolve_black_white_even(current, k, n_steps, s);
   }else{
     evolve_black_white_odd(current, k, n_steps, s);
   }
-
 }
 

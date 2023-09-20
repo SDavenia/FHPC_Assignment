@@ -30,7 +30,6 @@ void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n
       
         #pragma omp for
         for(int i=1;i<k+1;i++){
-          //printf("I am thread %d doing row %d\n", myid, i);
           for(int j=0; j<k;j++){
               int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                   current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
@@ -57,10 +56,8 @@ void evolve_static_OMP(unsigned char* current, unsigned char* next, int k, int n
       next = current;
       current=tmp;
 
-      //printf("Step %d:\n", n_step+1);
-      //print_image(current, k+2,k);
       if((n_step+1) % s == 0){
-        char file_path[45] = "images/evolve_static/"; // Sufficiently large
+        char file_path[45] = "images/evolve_static/";
         char filename[20];
         
         snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
@@ -85,7 +82,6 @@ void evolve_static_MPI_blocking(unsigned char* current, unsigned char* next, int
       
         #pragma omp for
         for(int i=1;i<rows_read+1;i++){
-          //printf("I am thread %d doing row %d\n", myid, i);
           for(int j=0; j<k;j++){
               int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                   current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
@@ -93,18 +89,7 @@ void evolve_static_MPI_blocking(unsigned char* current, unsigned char* next, int
               next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
           }
         }
-        // Here there is an implicit barrier of the for loop
-        /* QUESTI VANNO SOSTITUITI CON UN MESSAGGIO
-        #pragma omp single nowait
-        for (int i = 0; i < k; i++){
-            next[i] = next[(k)*k + i];
-        }
-
-        #pragma omp single nowait
-        for (int i = 0; i < k; i++){
-            next[(k+1)*k+i]=next[k+i];
-        }
-        */
+        
       }
       // Here there is an implcit barrier for the end of the parallel region.
 
@@ -137,8 +122,6 @@ void evolve_static_MPI_blocking(unsigned char* current, unsigned char* next, int
         // Send message to process after
         MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
         
-        // int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
-        //   MPI_Comm comm, MPI_Status *status)
         // BLOCKING RECEIVE
         // Upper row receive
         MPI_Recv(next, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -152,81 +135,8 @@ void evolve_static_MPI_blocking(unsigned char* current, unsigned char* next, int
       next = current;
       current=tmp;
 
-      /*
-      // Questa parte serve solo a controllare
-      if(n_step == 0){
-        FILE* prova_file;
-        char nome_file[] = "prova_read.txt";
-        if(n_step==0){
-          if(rank==0){
-            prova_file = fopen(nome_file, "w");
-            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-            for(int i = 0; i < (rows_read+2) * k; i++)
-                fprintf(prova_file, "%u ",current[i]);
-            
-            fprintf(prova_file, "\n");
-            fclose(prova_file);
-          }
-        }else{
-          if(rank==0){
-            prova_file = fopen(nome_file, "w");
-            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-            for(int i = 0; i < (rows_read+2) * k; i++)
-                fprintf(prova_file, "%u ",current[i]);
-            
-            fprintf(prova_file, "\n");
-            fclose(prova_file);
-          } 
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        
-        if(rank==1){
-            prova_file = fopen(nome_file, "a");
-            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-            for(int i = 0; i < (rows_read+2) * k; i++)
-                fprintf(prova_file, "%u ",current[i]);
-
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        if(rank==2){
-          prova_file = fopen(nome_file, "a");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        if(rank==3){
-          prova_file = fopen(nome_file, "a");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        if(rank==4){
-          prova_file = fopen(nome_file, "a");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-      }
-      */
-
-      //printf("Step %d:\n", n_step+1);
-      //print_image(current, k+2,k);
     if((n_step+1) % s == 0){
-      char file_path[45] = "images/evolve_static/"; // Sufficiently large
+      char file_path[45] = "images/evolve_static/";
       char filename[20];
       
       snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
@@ -250,7 +160,6 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
       
         #pragma omp for
         for(int i=1;i<rows_read+1;i++){
-          //printf("I am thread %d doing row %d\n", myid, i);
           for(int j=0; j<k;j++){
               int n_neigh = current[(j-1 + k)%k + i*k] + current[(j+1 + k)%k + i*k] + current[(j-1 + k)%k + (i-1)*k] +
                   current[(j+1 + k)%k + (i-1)*k] + current[(j-1 + k)%k + (i+1)*k] + current[(j+1 + k)%k + (i+1)*k]+
@@ -258,18 +167,6 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
               next[i*k+j] = (n_neigh > 765 || n_neigh < 510) ? 0 : 255; 
           }
         }
-        // Here there is an implicit barrier of the for loop
-        /* QUESTI VANNO SOSTITUITI CON UN MESSAGGIO
-        #pragma omp single nowait
-        for (int i = 0; i < k; i++){
-            next[i] = next[(k)*k + i];
-        }
-
-        #pragma omp single nowait
-        for (int i = 0; i < k; i++){
-            next[(k+1)*k+i]=next[k+i];
-        }
-        */
       }
       // Here there is an implcit barrier for the end of the parallel region.
 
@@ -301,9 +198,6 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
         // Send message to process after
         MPI_Isend(next + rows_read*k, k, MPI_UNSIGNED_CHAR, rank+1, rank + n_step, MPI_COMM_WORLD, &request[1]);
         
-        // int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag,
-        //   MPI_Comm comm, MPI_Status *status)
-  
         // Upper row receive
         MPI_Irecv(next, k, MPI_UNSIGNED_CHAR, rank-1, rank-1 + n_step, MPI_COMM_WORLD, &request[2]);
         // Lower row receive
@@ -316,81 +210,8 @@ void evolve_static_MPI(unsigned char* current, unsigned char* next, int k, int n
       next = current;
       current=tmp;
 
-      /*
-      // Questa parte serve solo a controllare
-      if(n_step == 0){
-        FILE* prova_file;
-        char nome_file[] = "prova_read.txt";
-        if(n_step==0){
-          if(rank==0){
-            prova_file = fopen(nome_file, "w");
-            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-            for(int i = 0; i < (rows_read+2) * k; i++)
-                fprintf(prova_file, "%u ",current[i]);
-            
-            fprintf(prova_file, "\n");
-            fclose(prova_file);
-          }
-        }else{
-          if(rank==0){
-            prova_file = fopen(nome_file, "w");
-            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-            for(int i = 0; i < (rows_read+2) * k; i++)
-                fprintf(prova_file, "%u ",current[i]);
-            
-            fprintf(prova_file, "\n");
-            fclose(prova_file);
-          } 
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        
-        if(rank==1){
-            prova_file = fopen(nome_file, "a");
-            fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-            for(int i = 0; i < (rows_read+2) * k; i++)
-                fprintf(prova_file, "%u ",current[i]);
-
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        if(rank==2){
-          prova_file = fopen(nome_file, "a");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        if(rank==3){
-          prova_file = fopen(nome_file, "a");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
-        if(rank==4){
-          prova_file = fopen(nome_file, "a");
-          fprintf(prova_file,"I am process %d of step %d\n", rank, n_step);
-          for(int i = 0; i < (rows_read+2) * k; i++)
-              fprintf(prova_file, "%u ",current[i]);
-          fprintf(prova_file, "\n");
-          fclose(prova_file);
-        }
-      }
-      */
-
-      //printf("Step %d:\n", n_step+1);
-      //print_image(current, k+2,k);
     if((n_step+1) % s == 0){
-      char file_path[45] = "images/evolve_static/"; // Sufficiently large
+      char file_path[45] = "images/evolve_static/";
       char filename[20];
       
       snprintf(filename, 20, "snapshot_%05d.pgm", n_step+1);
