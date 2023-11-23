@@ -46,3 +46,8 @@ Basic/.DS_Store
 *.pgm
 *.txt
 *.loc
+
+
+
+## Analysis files ##
+*.ipynb
